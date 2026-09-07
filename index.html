@@ -8,15 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Pathik">
+<link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <meta name="description" content="Pathik — professional navigation and trip planner">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Pathik">
-<link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <title>Pathik — Navigation</title>
 
 <link rel="stylesheet"
@@ -232,7 +227,7 @@ header{
 .leaflet-control-zoom{
   position:absolute!important;
   right:8px!important;
-  bottom:66px!important;
+  bottom:68px!important;
   margin:0!important;
   z-index:1100!important
 }
@@ -250,37 +245,56 @@ header{
 
 .leaflet-marker-icon{
   touch-action:none!important;
-  user-select:none;
-  -webkit-user-drag:none
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-user-drag:none!important
 }
 
 .pathik-destination-pin-wrap{
   background:transparent!important;
   border:0!important;
+  pointer-events:auto!important;
   touch-action:none!important;
-  pointer-events:auto!important
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-user-drag:none!important
 }
 
 .pathik-destination-pin{
-  width:42px;height:42px;
+  width:42px;
+  height:42px;
   border-radius:50% 50% 50% 0;
   transform:rotate(-45deg);
   background:#ef4444;
   border:4px solid #fff;
   box-shadow:0 4px 14px #0008;
-  display:flex;align-items:center;justify-content:center
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:auto;
+  touch-action:none;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-user-drag:none
 }
+
 .pathik-destination-pin span{
   transform:rotate(45deg);
-  color:#fff;font-size:14px;font-weight:900
-}
-.destination-dragging .pathik-destination-pin{
-  transform:rotate(-45deg) scale(1.08);
-  box-shadow:0 6px 18px #000a
+  color:#fff;
+  font-size:14px;
+  font-weight:900;
+  pointer-events:none
 }
 
 .destination-dragging{
   cursor:grabbing!important
+}
+
+.destination-dragging .pathik-destination-pin{
+  transform:rotate(-45deg) scale(1.08);
+  box-shadow:0 6px 18px #000a;
+  cursor:grabbing
 }
 
 .destination-dragging .leaflet-marker-icon{
@@ -707,18 +721,6 @@ header{
 }
 
 /* =========================================================
-   PWA INSTALL
-========================================================= */
-.install-row{
-  display:flex;align-items:center;gap:8px;margin-top:8px
-}
-.install-btn{
-  flex:1;border:0;border-radius:11px;padding:11px;background:#2563eb;color:#fff;font-weight:900
-}
-.install-btn[hidden]{display:none!important}
-.install-help{font-size:11px;opacity:.62;line-height:1.5;margin-top:7px}
-
-/* =========================================================
    TOAST
 ========================================================= */
 
@@ -756,6 +758,32 @@ footer{
   padding:18px 4px 8px;
   font-size:10px;
   opacity:.45
+}
+
+/* =========================================================
+   PWA INSTALL
+========================================================= */
+.install-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:8px
+}
+.install-btn{
+  flex:1;
+  border:0;
+  border-radius:11px;
+  padding:11px;
+  background:#2563eb;
+  color:#fff;
+  font-weight:900
+}
+.install-btn[hidden]{display:none!important}
+.install-help{
+  font-size:11px;
+  opacity:.62;
+  line-height:1.5;
+  margin-top:7px
 }
 
 /* =========================================================
@@ -888,7 +916,7 @@ body.hc button{
 
   .leaflet-control-zoom{
     right:7px!important;
-    bottom:62px!important
+    bottom:64px!important
   }
 
   .route-grid,
@@ -940,10 +968,6 @@ body.hc button{
 
   <div class="map-controls">
 
-    <button id="zoomIn" title="Zoom in">+</button>
-
-    <button id="zoomOut" title="Zoom out">−</button>
-
     <button id="locateBtn" title="My location">⌖</button>
 
     <button id="compassBtn" title="Compass">🧭</button>
@@ -955,6 +979,10 @@ body.hc button{
     <button id="clearBtn" title="Clear map">×</button>
 
     <button id="shareBtn" title="Share">↗</button>
+
+    <button id="routeBtnMap" title="Route planner">➤</button>
+
+    <button id="savedBtnMap" title="Saved places">★</button>
 
   </div>
 
@@ -1522,6 +1550,11 @@ body.hc button{
 
     </div>
 
+    <div class="install-row">
+      <button class="install-btn" id="installBtn" type="button">⬇ Install Pathik</button>
+    </div>
+    <div class="install-help" id="installHelp">Install Pathik as an app. On iPhone/iPad, use Safari Share → Add to Home Screen.</div>
+
     <button
       class="action"
       id="clearDataBtn"
@@ -1736,13 +1769,6 @@ const nativeZoom=L.control.zoom({
 
 nativeZoom.addTo(map);
 
-$("zoomIn").onclick=()=>{
-  map.zoomIn();
-};
-
-$("zoomOut").onclick=()=>{
-  map.zoomOut();
-};
 
 /* =========================================================
    UTILITIES
@@ -1837,6 +1863,28 @@ function parseCoordinates(text){
 /* =========================================================
    COLLAPSIBLE PANELS
 ========================================================= */
+
+
+$("routeBtnMap").onclick=()=>{
+  const panel=document.querySelector(".panel");
+  if(panel){
+    panel.classList.add("open");
+    const arrow=panel.querySelector(".panel-head span:last-child");
+    if(arrow) arrow.textContent="⌃";
+    panel.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+};
+
+$("savedBtnMap").onclick=()=>{
+  const panels=[...document.querySelectorAll(".panel")];
+  const panel=panels.find(p=>p.textContent.includes("Saved & Recent Places"));
+  if(panel){
+    panel.classList.add("open");
+    const arrow=panel.querySelector(".panel-head span:last-child");
+    if(arrow) arrow.textContent="⌃";
+    panel.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+};
 
 document.querySelectorAll(".panel-head")
 .forEach(head=>{
@@ -2011,31 +2059,38 @@ function destinationIcon(){
   });
 }
 
-let destinationGestureState=null;
+let destinationPointerState=null;
 
-function lockMapGesturesForMarker(){
-  destinationGestureState={
+function lockMapForDestinationDrag(){
+  destinationPointerState={
     dragging:!!map.dragging && map.dragging.enabled(),
     touchZoom:!!map.touchZoom && map.touchZoom.enabled(),
     doubleClickZoom:!!map.doubleClickZoom && map.doubleClickZoom.enabled(),
     scrollWheelZoom:!!map.scrollWheelZoom && map.scrollWheelZoom.enabled(),
     boxZoom:!!map.boxZoom && map.boxZoom.enabled(),
+    keyboard:!!map.keyboard && map.keyboard.enabled(),
     touchRotate:!!map.touchRotate && map.touchRotate.enabled()
   };
-  [map.dragging,map.touchZoom,map.doubleClickZoom,map.scrollWheelZoom,map.boxZoom,map.touchRotate]
-    .forEach(handler=>handler && handler.disable && handler.disable());
+  if(map.dragging) map.dragging.disable();
+  if(map.touchZoom) map.touchZoom.disable();
+  if(map.doubleClickZoom) map.doubleClickZoom.disable();
+  if(map.scrollWheelZoom) map.scrollWheelZoom.disable();
+  if(map.boxZoom) map.boxZoom.disable();
+  if(map.keyboard) map.keyboard.disable();
+  if(map.touchRotate && map.touchRotate.disable) map.touchRotate.disable();
 }
 
-function unlockMapGesturesAfterMarker(){
-  if(!destinationGestureState) return;
-  const state=destinationGestureState;
+function unlockMapAfterDestinationDrag(){
+  const state=destinationPointerState;
+  if(!state) return;
   if(state.dragging && map.dragging) map.dragging.enable();
   if(state.touchZoom && map.touchZoom) map.touchZoom.enable();
   if(state.doubleClickZoom && map.doubleClickZoom) map.doubleClickZoom.enable();
   if(state.scrollWheelZoom && map.scrollWheelZoom) map.scrollWheelZoom.enable();
   if(state.boxZoom && map.boxZoom) map.boxZoom.enable();
+  if(state.keyboard && map.keyboard) map.keyboard.enable();
   if(state.touchRotate && map.touchRotate && map.touchRotate.enable) map.touchRotate.enable();
-  destinationGestureState=null;
+  destinationPointerState=null;
 }
 
 async function reverseGeocode(lat,lng){
@@ -2055,70 +2110,106 @@ function createDraggableDestination(lat,lng,name="Selected destination"){
 
   if(destinationMarker){
     destinationMarker.off();
-    map.removeLayer(destinationMarker);
+    if(map.hasLayer(destinationMarker)) map.removeLayer(destinationMarker);
   }
 
   destinationMarker=L.marker([lat,lng],{
-    draggable:true,
+    draggable:false,
+    autoPan:false,
     icon:destinationIcon(),
     title:"Drag to move destination",
-    autoPan:false,
     zIndexOffset:1500,
     riseOnHover:true
   }).addTo(map);
 
   currentDestination={lat,lng,name};
-  destinationMarker.bindTooltip("Drag me to move destination",{direction:"top",offset:[0,-44],opacity:.9});
+  destinationMarker.bindTooltip("Drag me to move destination",{
+    direction:"top",offset:[0,-44],opacity:.9
+  });
 
   const icon=destinationMarker.getElement();
-  if(icon){
-    L.DomEvent.disableClickPropagation(icon);
-    L.DomEvent.disableScrollPropagation(icon);
-    L.DomEvent.on(icon,"pointerdown",L.DomEvent.stopPropagation);
-    L.DomEvent.on(icon,"touchstart",L.DomEvent.stopPropagation);
+  if(!icon) return destinationMarker;
+
+  L.DomEvent.disableClickPropagation(icon);
+  L.DomEvent.disableScrollPropagation(icon);
+  icon.style.touchAction="none";
+  icon.style.userSelect="none";
+  icon.style.webkitUserSelect="none";
+  icon.style.webkitUserDrag="none";
+  icon.style.cursor="grab";
+
+  let dragging=false;
+  let pointerId=null;
+
+  function updateFromPointer(e){
+    if(!dragging) return;
+    const rect=map.getContainer().getBoundingClientRect();
+    const point=L.point(e.clientX-rect.left,e.clientY-rect.top);
+    const p=map.containerPointToLatLng(point);
+    destinationMarker.setLatLng(p,{animate:false});
+    currentDestination={lat:p.lat,lng:p.lng,name:currentDestination?.name||"Selected destination"};
+    $("to").value=`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+    e.preventDefault();
+    e.stopPropagation();
   }
 
-  destinationMarker.on("dragstart",function(){
-    destinationMarker.closePopup();
-    lockMapGesturesForMarker();
-    followGPS=false;
-    if($("followSetting")) $("followSetting").checked=false;
-    map.getContainer().classList.add("destination-dragging");
-  });
-
-  destinationMarker.on("drag",function(e){
-    const p=e.target.getLatLng();
-    currentDestination={
-      lat:p.lat,
-      lng:p.lng,
-      name:currentDestination?.name || "Selected destination"
-    };
-    $("to").value=`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
-  });
-
-  destinationMarker.on("dragend",async function(e){
-    const p=e.target.getLatLng();
-    const previousName=currentDestination?.name || "Selected destination";
-    currentDestination={lat:p.lat,lng:p.lng,name:previousName};
-    $("to").value=`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
-    map.getContainer().classList.remove("destination-dragging");
-    unlockMapGesturesAfterMarker();
-
-    const placeName=await reverseGeocode(p.lat,p.lng);
-    if(placeName){
-      currentDestination.name=placeName;
-      $("to").value=placeName;
-      if(destinationMarker) destinationMarker.bindTooltip("Drag me to move destination",{direction:"top",offset:[0,-44],opacity:.9});
+  function finishDrag(e){
+    if(!dragging) return;
+    dragging=false;
+    if(pointerId!==null && icon.releasePointerCapture){
+      try{icon.releasePointerCapture(pointerId);}catch(err){}
     }
+    pointerId=null;
+    icon.style.cursor="grab";
+    map.getContainer().classList.remove("destination-dragging");
+    unlockMapAfterDestinationDrag();
 
+    const p=destinationMarker.getLatLng();
+    currentDestination={lat:p.lat,lng:p.lng,name:currentDestination?.name||"Selected destination"};
+    $("to").value=`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
     toast(`Destination moved to ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`);
 
-    // Recalculate only after the finger is released — never on every drag frame.
+    reverseGeocode(p.lat,p.lng).then(placeName=>{
+      if(placeName){
+        currentDestination.name=placeName;
+        $("to").value=placeName;
+      }
+    });
+
     if(currentPosition && $("from").value.trim()===""){
       $("from").value=`${currentPosition.coords.latitude.toFixed(6)}, ${currentPosition.coords.longitude.toFixed(6)}`;
     }
     if($("from").value.trim()) getRoute();
-  });
+
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  icon.addEventListener("pointerdown",function(e){
+    if(e.button!==undefined && e.button!==0) return;
+    dragging=true;
+    pointerId=e.pointerId;
+    lockMapForDestinationDrag();
+    followGPS=false;
+    if($("followSetting")) $("followSetting").checked=false;
+    map.getContainer().classList.add("destination-dragging");
+    icon.style.cursor="grabbing";
+    if(icon.setPointerCapture){
+      try{icon.setPointerCapture(e.pointerId);}catch(err){}
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  },{passive:false});
+
+  icon.addEventListener("pointermove",updateFromPointer,{passive:false});
+  icon.addEventListener("pointerup",finishDrag,{passive:false});
+  icon.addEventListener("pointercancel",finishDrag,{passive:false});
+
+  ["mousedown","mouseup","click","dblclick","touchstart","touchmove","touchend"]
+    .forEach(type=>icon.addEventListener(type,e=>{
+      e.preventDefault();
+      e.stopPropagation();
+    },{passive:false}));
 
   return destinationMarker;
 }
@@ -4144,16 +4235,17 @@ window.addEventListener(
   }
 );
 
+
 /* =========================================================
-   PWA SERVICE WORKER + INSTALL
+   PWA INSTALL
 ========================================================= */
 let deferredInstallPrompt=null;
-const installBtn=document.getElementById("installBtn");
-const installHelp=document.getElementById("installHelp");
+const installBtn=$("installBtn");
+const installHelp=$("installHelp");
 
 function isStandalone(){
   return window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true;
+    window.navigator.standalone===true;
 }
 
 function updateInstallUI(){
@@ -4163,12 +4255,13 @@ function updateInstallUI(){
     if(installHelp) installHelp.textContent="Pathik is installed and running as an app.";
     return;
   }
+  installBtn.hidden=false;
   if(deferredInstallPrompt){
-    installBtn.hidden=false;
+    installBtn.textContent="⬇ Install Pathik";
     if(installHelp) installHelp.textContent="Install Pathik on this device for a dedicated app window.";
   }else{
-    installBtn.hidden=true;
-    if(installHelp) installHelp.textContent="Use your browser's Install app / Add to Home Screen option. Pathik is PWA-ready.";
+    installBtn.textContent="⬇ Install Pathik";
+    if(installHelp) installHelp.textContent="Android/desktop: use the browser Install option. iPhone/iPad: Safari Share → Add to Home Screen.";
   }
 }
 
@@ -4187,12 +4280,11 @@ window.addEventListener("appinstalled",()=>{
 if(installBtn){
   installBtn.addEventListener("click",async()=>{
     if(!deferredInstallPrompt){
-      toast("Open your browser menu and choose Install Pathik / Add to Home Screen");
+      toast("Use browser menu → Install Pathik / Add to Home Screen");
       return;
     }
     const prompt=deferredInstallPrompt;
     deferredInstallPrompt=null;
-    updateInstallUI();
     try{
       await prompt.prompt();
       await prompt.userChoice;
@@ -4207,13 +4299,16 @@ if("serviceWorker" in navigator){
       const reg=await navigator.serviceWorker.register("./sw.js",{scope:"./",updateViaCache:"none"});
       if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
       reg.update().catch(()=>{});
-    }catch(e){}
+    }catch(e){
+      console.warn("Pathik service worker registration failed",e);
+    }
     updateInstallUI();
   });
 }
 
 window.matchMedia("(display-mode: standalone)").addEventListener?.("change",updateInstallUI);
 updateInstallUI();
+
 </script>
 
 </body>
