@@ -1,0 +1,4220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pathik">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<meta name="description" content="Pathik — professional navigation and trip planner">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pathik">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<title>Pathik — Navigation</title>
+
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate@0.2.4/dist/leaflet-rotate.css">
+
+<style>
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  min-height:100%;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+
+body{
+  background:#101318;
+  color:#f5f7fa;
+  transition:.2s
+}
+
+button,input,select{font:inherit}
+button{cursor:pointer}
+
+#app{
+  width:100%;
+  max-width:900px;
+  margin:auto;
+  padding:10px
+}
+
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:10px
+}
+
+.brand{
+  font-size:25px;
+  font-weight:900;
+  letter-spacing:-.8px
+}
+
+.brand small{
+  display:block;
+  font-size:10px;
+  font-weight:600;
+  opacity:.55;
+  letter-spacing:.4px
+}
+
+.theme-btn{
+  width:42px;
+  height:42px;
+  border:0;
+  border-radius:50%;
+  background:#fff;
+  color:#111;
+  box-shadow:0 3px 12px #0007
+}
+
+/* =========================================================
+   MAP
+========================================================= */
+
+.map-wrap{
+  position:relative;
+  width:100%;
+  overflow:hidden;
+  border-radius:16px;
+  border:1px solid #ffffff18;
+  background:#20252d
+}
+
+#map{
+  width:100%;
+  height:58dvh;
+  min-height:420px;
+  max-height:680px
+}
+
+.searchbar{
+  position:absolute;
+  z-index:1200;
+  left:10px;
+  right:10px;
+  top:10px;
+  display:flex;
+  gap:7px
+}
+
+.searchbar input{
+  min-width:0;
+  flex:1;
+  height:44px;
+  border:0;
+  border-radius:13px;
+  padding:0 14px;
+  background:#fff;
+  color:#111;
+  box-shadow:0 3px 14px #0006
+}
+
+.searchbar button{
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:13px;
+  background:#fff;
+  color:#111;
+  box-shadow:0 3px 14px #0006;
+  font-size:20px
+}
+
+.orientation{
+  position:absolute;
+  right:10px;
+  top:64px;
+  z-index:1200;
+  width:42px;
+  height:42px;
+  border:0;
+  border-radius:50%;
+  background:#fff;
+  color:#111;
+  box-shadow:0 3px 12px #0007;
+  font-size:19px
+}
+
+/* =========================================================
+   BOTTOM MAP CONTROLS
+========================================================= */
+
+.map-controls{
+  position:absolute;
+  left:8px;
+  right:8px;
+  bottom:9px;
+  width:auto;
+  max-width:calc(100% - 16px);
+  z-index:1000;
+
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-start;
+  gap:7px;
+
+  overflow-x:auto;
+  overflow-y:hidden;
+
+  padding:2px 3px;
+
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+
+  touch-action:pan-x
+}
+
+.map-controls::-webkit-scrollbar{
+  display:none
+}
+
+.map-controls button{
+  width:40px!important;
+  height:40px!important;
+  min-width:40px!important;
+  max-width:40px!important;
+  min-height:40px!important;
+  max-height:40px!important;
+
+  flex:0 0 40px!important;
+
+  margin:0!important;
+  padding:0!important;
+
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+
+  border:0;
+  border-radius:50%!important;
+
+  background:#fff;
+  color:#111;
+
+  font-size:18px!important;
+  line-height:1!important;
+
+  box-shadow:0 2px 8px #0008;
+
+  transform:none!important;
+  scale:1!important;
+
+  touch-action:manipulation
+}
+
+.map-controls button.active{
+  background:#2563eb!important;
+  color:#fff!important
+}
+
+/* =========================================================
+   ORIGINAL LEAFLET ZOOM ONLY
+========================================================= */
+
+.leaflet-control-zoom{
+  position:absolute!important;
+  right:8px!important;
+  bottom:66px!important;
+  margin:0!important;
+  z-index:1100!important
+}
+
+.leaflet-control-zoom a{
+  width:36px!important;
+  height:36px!important;
+  line-height:36px!important;
+  font-size:22px!important
+}
+
+/* =========================================================
+   DRAGGING MARKER
+========================================================= */
+
+.leaflet-marker-icon{
+  touch-action:none!important;
+  user-select:none;
+  -webkit-user-drag:none
+}
+
+.pathik-destination-pin-wrap{
+  background:transparent!important;
+  border:0!important;
+  touch-action:none!important;
+  pointer-events:auto!important
+}
+
+.pathik-destination-pin{
+  width:42px;height:42px;
+  border-radius:50% 50% 50% 0;
+  transform:rotate(-45deg);
+  background:#ef4444;
+  border:4px solid #fff;
+  box-shadow:0 4px 14px #0008;
+  display:flex;align-items:center;justify-content:center
+}
+.pathik-destination-pin span{
+  transform:rotate(45deg);
+  color:#fff;font-size:14px;font-weight:900
+}
+.destination-dragging .pathik-destination-pin{
+  transform:rotate(-45deg) scale(1.08);
+  box-shadow:0 6px 18px #000a
+}
+
+.destination-dragging{
+  cursor:grabbing!important
+}
+
+.destination-dragging .leaflet-marker-icon{
+  cursor:grabbing!important
+}
+
+/* =========================================================
+   MEASUREMENT
+========================================================= */
+
+#measureStatus{
+  position:absolute;
+  left:50%;
+  bottom:63px;
+  transform:translateX(-50%) translateY(10px);
+  z-index:1250;
+
+  max-width:calc(100% - 30px);
+
+  padding:9px 14px;
+
+  border-radius:999px;
+
+  background:#172033ee;
+  color:#fff;
+
+  border:1px solid #ffffff20;
+
+  box-shadow:0 4px 18px #0008;
+
+  font-size:12px;
+  font-weight:800;
+
+  text-align:center;
+
+  opacity:0;
+  pointer-events:none;
+
+  transition:.2s;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+
+#measureStatus.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0)
+}
+
+.measure-active{
+  cursor:crosshair!important
+}
+
+.pathik-measure-label{
+  background:transparent!important;
+  border:0!important
+}
+
+.pathik-measure-label span{
+  display:block;
+  padding:4px 7px;
+  border-radius:8px;
+  background:#2563eb;
+  color:#fff;
+  font-size:10px;
+  font-weight:900;
+  white-space:nowrap;
+  box-shadow:0 2px 8px #0007
+}
+
+/* =========================================================
+   MAP VARIATIONS
+========================================================= */
+
+.map-variations{
+  display:flex;
+  gap:7px;
+  overflow-x:auto;
+  padding:8px 2px;
+  scrollbar-width:none
+}
+
+.map-variations::-webkit-scrollbar{
+  display:none
+}
+
+.map-type{
+  flex:0 0 auto;
+  border:1px solid #ffffff18;
+  border-radius:999px;
+  padding:8px 12px;
+  background:#1b2028;
+  color:#ddd;
+  font-size:12px;
+  font-weight:700
+}
+
+.map-type.active{
+  background:#2563eb;
+  color:#fff;
+  border-color:#2563eb
+}
+
+/* =========================================================
+   PANELS
+========================================================= */
+
+.panel{
+  margin-top:10px;
+  border:1px solid #ffffff12;
+  border-radius:15px;
+  background:#171b21;
+  overflow:hidden
+}
+
+.panel-head{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:inherit;
+
+  padding:14px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  text-align:left;
+  font-weight:900
+}
+
+.panel-head span:last-child{
+  font-size:13px;
+  opacity:.6
+}
+
+.panel-body{
+  display:none;
+  padding:0 12px 13px
+}
+
+.panel.open .panel-body{
+  display:block
+}
+
+.panel.open .panel-head{
+  border-bottom:1px solid #ffffff0d
+}
+
+/* =========================================================
+   FORMS
+========================================================= */
+
+.route-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px
+}
+
+.field{
+  margin-bottom:8px
+}
+
+.field label{
+  display:block;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  opacity:.55;
+  margin:0 0 4px 3px
+}
+
+.field input,
+.field select{
+  width:100%;
+  height:43px;
+  border:1px solid #ffffff15;
+  border-radius:11px;
+  background:#0f1318;
+  color:inherit;
+  padding:0 11px
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:4px
+}
+
+.action{
+  flex:1;
+  border:0;
+  border-radius:11px;
+  padding:11px;
+  background:#252c36;
+  color:#fff;
+  font-weight:800
+}
+
+.action.primary{
+  background:#2563eb
+}
+
+/* =========================================================
+   MODES
+========================================================= */
+
+.mode-row,
+.profile-row{
+  display:flex;
+  gap:7px;
+  overflow-x:auto;
+  padding-bottom:3px;
+  scrollbar-width:none
+}
+
+.mode-row::-webkit-scrollbar,
+.profile-row::-webkit-scrollbar{
+  display:none
+}
+
+.mode{
+  flex:0 0 auto;
+  border:1px solid #ffffff15;
+  background:#20262f;
+  color:inherit;
+  border-radius:10px;
+  padding:9px 11px;
+  font-size:12px;
+  font-weight:800
+}
+
+.mode.active{
+  background:#2563eb;
+  color:#fff
+}
+
+/* =========================================================
+   OPTIONS
+========================================================= */
+
+.options{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:8px
+}
+
+.check{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:9px;
+  background:#10151b;
+  border-radius:10px;
+  font-size:12px
+}
+
+.check input{
+  accent-color:#2563eb
+}
+
+/* =========================================================
+   ROUTES
+========================================================= */
+
+.result{
+  margin-top:10px;
+  padding:11px;
+  border-radius:11px;
+  background:#0e1319;
+  display:none;
+  font-size:13px;
+  line-height:1.5
+}
+
+.result.show{
+  display:block
+}
+
+.route-choice{
+  margin-top:7px;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #ffffff12;
+  background:#171d25;
+  cursor:pointer
+}
+
+.route-choice.active{
+  border-color:#2563eb;
+  background:#172641
+}
+
+.route-choice strong{
+  display:block
+}
+
+.route-choice small{
+  opacity:.65
+}
+
+.instructions{
+  margin-top:8px;
+  display:grid;
+  gap:6px
+}
+
+.turn{
+  padding:9px;
+  border-radius:10px;
+  background:#10151b;
+  font-size:12px
+}
+
+/* =========================================================
+   SPECIALIZED NAVIGATION
+========================================================= */
+
+.special-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px
+}
+
+.special{
+  border:1px solid #ffffff12;
+  background:#10151b;
+  color:inherit;
+  border-radius:12px;
+  padding:12px;
+  text-align:left
+}
+
+.special.active{
+  border-color:#2563eb;
+  background:#172641
+}
+
+.special b{
+  display:block;
+  margin-bottom:3px
+}
+
+.special small{
+  opacity:.55
+}
+
+/* =========================================================
+   SAVED / POI
+========================================================= */
+
+.poi-list,
+.saved-list{
+  display:grid;
+  gap:7px
+}
+
+.poi,
+.saved{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:7px;
+  padding:10px;
+  border-radius:10px;
+  background:#10151b
+}
+
+.poi button,
+.saved button{
+  border:0;
+  border-radius:8px;
+  padding:7px 9px;
+  background:#2563eb;
+  color:#fff;
+  font-size:11px
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.status{
+  padding:10px;
+  border-radius:10px;
+  background:#10151b;
+  font-size:12px;
+  line-height:1.7
+}
+
+.good{
+  color:#5ee89a
+}
+
+.warn{
+  color:#ffc857
+}
+
+/* =========================================================
+   TRIP STATISTICS
+========================================================= */
+
+.trip-stats{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:7px
+}
+
+.stat{
+  padding:11px;
+  border-radius:11px;
+  background:#10151b
+}
+
+.stat b{
+  display:block;
+  font-size:17px
+}
+
+.stat small{
+  opacity:.55
+}
+
+/* =========================================================
+   PWA INSTALL
+========================================================= */
+.install-row{
+  display:flex;align-items:center;gap:8px;margin-top:8px
+}
+.install-btn{
+  flex:1;border:0;border-radius:11px;padding:11px;background:#2563eb;color:#fff;font-weight:900
+}
+.install-btn[hidden]{display:none!important}
+.install-help{font-size:11px;opacity:.62;line-height:1.5;margin-top:7px}
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+#toast{
+  position:fixed;
+  z-index:5000;
+  left:50%;
+  bottom:18px;
+
+  transform:translate(-50%,20px);
+  opacity:0;
+  pointer-events:none;
+
+  background:#fff;
+  color:#111;
+
+  padding:10px 15px;
+  border-radius:999px;
+
+  font-size:12px;
+  font-weight:800;
+
+  box-shadow:0 4px 18px #0008;
+
+  transition:.2s
+}
+
+#toast.show{
+  opacity:1;
+  transform:translate(-50%,0)
+}
+
+footer{
+  text-align:center;
+  padding:18px 4px 8px;
+  font-size:10px;
+  opacity:.45
+}
+
+/* =========================================================
+   LIGHT
+========================================================= */
+
+body.light{
+  background:#f2f4f7;
+  color:#15181d
+}
+
+body.light .panel{
+  background:#fff;
+  border-color:#00000010
+}
+
+body.light .field input,
+body.light .field select,
+body.light .check,
+body.light .stat,
+body.light .turn,
+body.light .poi,
+body.light .saved,
+body.light .result,
+body.light .route-choice{
+  background:#f1f3f6;
+  color:#15181d
+}
+
+body.light .mode,
+body.light .map-type{
+  background:#edf0f4;
+  color:#222
+}
+
+body.light .action{
+  background:#e5e8ed;
+  color:#111
+}
+
+/* =========================================================
+   OLED
+========================================================= */
+
+body.oled{
+  background:#000;
+  color:#fff
+}
+
+body.oled .panel{
+  background:#000;
+  border-color:#222
+}
+
+body.oled .field input,
+body.oled .field select,
+body.oled .check,
+body.oled .stat,
+body.oled .turn,
+body.oled .poi,
+body.oled .saved,
+body.oled .result,
+body.oled .route-choice{
+  background:#050505;
+  border-color:#222
+}
+
+/* =========================================================
+   HIGH CONTRAST
+========================================================= */
+
+body.hc{
+  background:#000;
+  color:#fff
+}
+
+body.hc .panel,
+body.hc .field input,
+body.hc .field select,
+body.hc .check,
+body.hc .stat,
+body.hc .turn,
+body.hc .poi,
+body.hc .saved,
+body.hc .result{
+  border:2px solid #fff
+}
+
+body.hc button{
+  outline:1px solid #fff
+}
+
+.large-text{
+  font-size:115%
+}
+
+/* =========================================================
+   SMALL SCREENS
+========================================================= */
+
+@media(max-width:400px){
+
+  #app{
+    padding:6px
+  }
+
+  #map{
+    min-height:390px;
+    height:56dvh
+  }
+
+  .map-controls{
+    left:6px;
+    right:6px;
+    bottom:8px;
+    max-width:calc(100% - 12px);
+    gap:6px
+  }
+
+  .map-controls button{
+    width:38px!important;
+    height:38px!important;
+    min-width:38px!important;
+    max-width:38px!important;
+    min-height:38px!important;
+    max-height:38px!important;
+    flex-basis:38px!important;
+    font-size:17px!important
+  }
+
+  .leaflet-control-zoom{
+    right:7px!important;
+    bottom:62px!important
+  }
+
+  .route-grid,
+  .special-grid,
+  .options{
+    grid-template-columns:1fr
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+<header>
+  <div class="brand">
+    Pathik
+    <small>Professional Navigation & Trip Planner</small>
+  </div>
+
+  <button class="theme-btn" id="themeBtn" title="Theme">◐</button>
+</header>
+
+<!-- =======================================================
+     MAP
+======================================================= -->
+
+<div class="map-wrap">
+
+  <div id="map"></div>
+
+  <div class="searchbar">
+    <input
+      id="mapSearch"
+      placeholder="Search places, addresses or coordinates"
+      autocomplete="off"
+    >
+    <button id="mapSearchBtn">⌕</button>
+  </div>
+
+  <button
+    class="orientation"
+    id="orientationBtn"
+    title="North up"
+  >🧭</button>
+
+  <div id="measureStatus"></div>
+
+  <div class="map-controls">
+
+    <button id="zoomIn" title="Zoom in">+</button>
+
+    <button id="zoomOut" title="Zoom out">−</button>
+
+    <button id="locateBtn" title="My location">⌖</button>
+
+    <button id="compassBtn" title="Compass">🧭</button>
+
+    <button id="measureBtn" title="Measure distance">📏</button>
+
+    <button id="nearbyBtn" title="Nearby places">◎</button>
+
+    <button id="clearBtn" title="Clear map">×</button>
+
+    <button id="shareBtn" title="Share">↗</button>
+
+  </div>
+
+</div>
+
+<!-- =======================================================
+     MAP VARIATIONS
+======================================================= -->
+
+<div class="map-variations">
+
+  <button class="map-type active" data-map="street">
+    🗺️ Street
+  </button>
+
+  <button class="map-type" data-map="satellite">
+    🛰️ Satellite
+  </button>
+
+  <button class="map-type" data-map="terrain">
+    🏔️ Terrain
+  </button>
+
+  <button class="map-type" data-map="hot">
+    🌍 HOT
+  </button>
+
+  <button class="map-type" data-map="dark">
+    🌙 Dark
+  </button>
+
+</div>
+
+<!-- =======================================================
+     ROUTE PLANNER
+======================================================= -->
+
+<section class="panel open">
+
+  <button class="panel-head">
+    <span>🧭 Route Planner</span>
+    <span>⌃</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div class="route-grid">
+
+      <div class="field">
+        <label>Starting point</label>
+        <input
+          id="from"
+          placeholder="Current location or place"
+        >
+      </div>
+
+      <div class="field">
+        <label>Destination</label>
+        <input
+          id="to"
+          placeholder="Where are you going?"
+        >
+      </div>
+
+    </div>
+
+    <div class="actions">
+
+      <button class="action" id="swapBtn">
+        ↕ Swap
+      </button>
+
+      <button class="action primary" id="routeBtn">
+        Get directions
+      </button>
+
+    </div>
+
+    <div class="field" style="margin-top:9px">
+
+      <label>Travel mode</label>
+
+      <div class="mode-row">
+
+        <button class="mode active" data-mode="driving">
+          🚗 Driving
+        </button>
+
+        <button class="mode" data-mode="motorcycle">
+          🏍️ Motorcycle
+        </button>
+
+        <button class="mode" data-mode="cycling">
+          🚲 Bicycle
+        </button>
+
+        <button class="mode" data-mode="foot">
+          🚶 Walking
+        </button>
+
+      </div>
+
+    </div>
+
+    <div class="field">
+
+      <label>Route preference</label>
+
+      <div class="mode-row">
+
+        <button class="mode active" data-pref="fastest">
+          ⚡ Fastest
+        </button>
+
+        <button class="mode" data-pref="shortest">
+          📏 Shortest
+        </button>
+
+        <button class="mode" data-pref="balanced">
+          ⚖️ Balanced
+        </button>
+
+      </div>
+
+    </div>
+
+    <div class="options">
+
+      <label class="check">
+        <input type="checkbox" id="avoidHighway">
+        Avoid highways
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="avoidToll">
+        Avoid tolls
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="avoidFerry">
+        Avoid ferries
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="avoidUnpaved">
+        Avoid unpaved
+      </label>
+
+    </div>
+
+    <div id="routeResult" class="result"></div>
+
+    <div id="instructions" class="instructions"></div>
+
+  </div>
+</section>
+
+<!-- =======================================================
+     SPECIALIZED NAVIGATION
+======================================================= -->
+
+<section class="panel">
+
+  <button class="panel-head">
+    <span>🚦 Specialized Navigation</span>
+    <span>⌄</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div class="special-grid">
+
+      <button class="special active" data-special="car">
+        🚗
+        <b>Car</b>
+        <small>Standard road navigation</small>
+      </button>
+
+      <button class="special" data-special="motorcycle">
+        🏍️
+        <b>Motorcycle</b>
+        <small>Two-wheel road profile</small>
+      </button>
+
+      <button class="special" data-special="bicycle">
+        🚲
+        <b>Bicycle</b>
+        <small>Cycle-friendly routing</small>
+      </button>
+
+      <button class="special" data-special="walking">
+        🚶
+        <b>Walking</b>
+        <small>Pedestrian routing</small>
+      </button>
+
+      <button class="special" data-special="hiking">
+        🥾
+        <b>Hiking</b>
+        <small>Outdoor walking profile</small>
+      </button>
+
+      <button class="special" data-special="offroad">
+        🏕️
+        <b>Off-road</b>
+        <small>Outdoor/off-road planning</small>
+      </button>
+
+      <button class="special" data-special="truck">
+        🚚
+        <b>Truck</b>
+        <small>Heavy vehicle planning</small>
+      </button>
+
+      <button class="special" data-special="wheelchair">
+        ♿
+        <b>Wheelchair</b>
+        <small>Accessibility planning</small>
+      </button>
+
+      <button class="special" data-special="ev">
+        ⚡
+        <b>EV</b>
+        <small>Electric vehicle planning</small>
+      </button>
+
+    </div>
+
+    <div class="status" style="margin-top:9px">
+
+      <b id="specialTitle">
+        Car navigation
+      </b>
+
+      <br>
+
+      <span id="specialDescription">
+        Standard road navigation using the available routing profile.
+      </span>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- =======================================================
+     WAYPOINTS
+======================================================= -->
+
+<section class="panel">
+
+  <button class="panel-head">
+    <span>🛣️ Trip & Waypoints</span>
+    <span>⌄</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div class="field">
+
+      <label>Add stop</label>
+
+      <div style="display:flex;gap:7px">
+
+        <input
+          id="stopInput"
+          placeholder="Enter a stop"
+          style="flex:1"
+        >
+
+        <button
+          class="action primary"
+          id="addStopBtn"
+          style="flex:0 0 auto"
+        >＋</button>
+
+      </div>
+
+    </div>
+
+    <div id="stopList" class="saved-list"></div>
+
+    <div class="actions">
+
+      <button class="action" id="optimizeBtn">
+        ✨ Optimize
+      </button>
+
+      <button class="action" id="saveTripBtn">
+        💾 Save trip
+      </button>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- =======================================================
+     SAVED
+======================================================= -->
+
+<section class="panel">
+
+  <button class="panel-head">
+    <span>⭐ Saved & Recent Places</span>
+    <span>⌄</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div class="actions">
+
+      <button class="action" id="saveCurrentBtn">
+        ⭐ Save current destination
+      </button>
+
+      <button class="action" id="clearSavedBtn">
+        Clear saved
+      </button>
+
+    </div>
+
+    <div
+      id="savedList"
+      class="saved-list"
+      style="margin-top:8px"
+    ></div>
+
+  </div>
+</section>
+
+<!-- =======================================================
+     NEARBY
+======================================================= -->
+
+<section class="panel">
+
+  <button class="panel-head">
+    <span>📍 Nearby Places</span>
+    <span>⌄</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div class="mode-row">
+
+      <button class="mode nearby-type" data-type="hospital">
+        🏥 Hospitals
+      </button>
+
+      <button class="mode nearby-type" data-type="police">
+        👮 Police
+      </button>
+
+      <button class="mode nearby-type" data-type="fuel">
+        ⛽ Fuel
+      </button>
+
+      <button class="mode nearby-type" data-type="restaurant">
+        🍴 Food
+      </button>
+
+      <button class="mode nearby-type" data-type="parking">
+        🅿️ Parking
+      </button>
+
+      <button class="mode nearby-type" data-type="pharmacy">
+        💊 Pharmacy
+      </button>
+
+    </div>
+
+    <div
+      id="poiList"
+      class="poi-list"
+      style="margin-top:8px"
+    ></div>
+
+  </div>
+</section>
+
+<!-- =======================================================
+     RECORDING
+======================================================= -->
+
+<section class="panel">
+
+  <button class="panel-head">
+    <span>🎥 Trip Recording & Statistics</span>
+    <span>⌄</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div class="actions">
+
+      <button
+        class="action primary"
+        id="recordBtn"
+      >
+        ● Start recording
+      </button>
+
+      <button
+        class="action"
+        id="exportGpxBtn"
+      >
+        GPX export
+      </button>
+
+    </div>
+
+    <div
+      class="trip-stats"
+      style="margin-top:9px"
+    >
+
+      <div class="stat">
+        <b id="statDistance">0 m</b>
+        <small>Distance</small>
+      </div>
+
+      <div class="stat">
+        <b id="statTime">00:00</b>
+        <small>Duration</small>
+      </div>
+
+      <div class="stat">
+        <b id="statSpeed">0 km/h</b>
+        <small>Average speed</small>
+      </div>
+
+      <div class="stat">
+        <b id="statMax">0 km/h</b>
+        <small>Maximum speed</small>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- =======================================================
+     SAFETY
+======================================================= -->
+
+<section class="panel">
+
+  <button class="panel-head">
+    <span>🛡️ Safety Center</span>
+    <span>⌄</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div class="status">
+
+      <b>Emergency number</b>
+
+      <input
+        id="emergencyNumber"
+        value="112"
+        style="
+          width:100%;
+          height:40px;
+          margin:7px 0;
+          border-radius:9px;
+          border:1px solid #ffffff18;
+          background:#0d1217;
+          color:inherit;
+          padding:0 10px
+        "
+      >
+
+      <button
+        class="action primary"
+        id="callEmergency"
+      >
+        📞 Call emergency
+      </button>
+
+    </div>
+
+    <div class="actions" style="margin-top:8px">
+
+      <button
+        class="action"
+        id="shareLocation"
+      >
+        📍 Share location
+      </button>
+
+      <button
+        class="action"
+        id="safetyStatus"
+      >
+        ✓ Safety status
+      </button>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- =======================================================
+     SETTINGS
+======================================================= -->
+
+<section class="panel">
+
+  <button class="panel-head">
+    <span>⚙️ Settings</span>
+    <span>⌄</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div class="options">
+
+      <label class="check">
+        <input type="checkbox" id="voiceSetting" checked>
+        Voice guidance
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="followSetting" checked>
+        Follow GPS
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="largeText">
+        Large text
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="highVisibility">
+        High visibility
+      </label>
+
+    </div>
+
+    <div class="field" style="margin-top:9px">
+
+      <label>Theme</label>
+
+      <div class="mode-row">
+
+        <button class="mode theme-choice" data-theme="light">
+          ☀ Light
+        </button>
+
+        <button class="mode active theme-choice" data-theme="dark">
+          ◐ Dark
+        </button>
+
+        <button class="mode theme-choice" data-theme="oled">
+          ● OLED
+        </button>
+
+        <button class="mode theme-choice" data-theme="hc">
+          HC
+        </button>
+
+      </div>
+
+    </div>
+
+    <button
+      class="action"
+      id="clearDataBtn"
+      style="width:100%;margin-top:8px"
+    >
+      🗑️ Clear Pathik data
+    </button>
+
+  </div>
+</section>
+
+<!-- =======================================================
+     NETWORK
+======================================================= -->
+
+<section class="panel">
+
+  <button class="panel-head">
+    <span>📡 Offline & Network</span>
+    <span>⌄</span>
+  </button>
+
+  <div class="panel-body">
+
+    <div
+      id="networkStatus"
+      class="status"
+    >
+      Checking network…
+    </div>
+
+  </div>
+
+</section>
+
+<footer>
+  © Manik Roy 2026. All Rights Reserved.
+</footer>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate@0.2.4/dist/leaflet-rotate.umd.min.js"></script>
+
+<script>
+"use strict";
+
+/* =========================================================
+   PATHIK STATE
+========================================================= */
+
+const $ = id => document.getElementById(id);
+
+let theme =
+  localStorage.getItem("pathikTheme") || "dark";
+
+let travelMode="driving";
+let routePreference="fastest";
+
+let routeLayers=[];
+let destinationMarker=null;
+
+let userMarker=null;
+let accuracyCircle=null;
+
+let gpsWatch=null;
+let currentPosition=null;
+let currentDestination=null;
+
+let selectedRouteIndex=0;
+let routeData=[];
+
+function readArrayStorage(key){
+  try{
+    const value=
+      JSON.parse(
+        localStorage.getItem(key) || "[]"
+      );
+    return Array.isArray(value) ? value : [];
+  }catch(e){
+    localStorage.removeItem(key);
+    return [];
+  }
+}
+
+let stops=readArrayStorage("pathikStops");
+let savedPlaces=readArrayStorage("pathikSaved");
+
+let recording=false;
+let recordingPoints=[];
+let recordingDistance=0;
+let recordingStart=0;
+let recordingTimer=null;
+let recordingMaxSpeed=0;
+let lastRecordPoint=null;
+let recordingElapsed=0;
+
+let followGPS=true;
+
+/* =========================================================
+   MAP
+========================================================= */
+
+const map=L.map("map",{
+  center:[22.5726,88.3639],
+  zoom:13,
+  maxZoom:19,
+  zoomControl:false,
+  rotate:true,
+  touchRotate:true,
+  bearing:0
+});
+
+/* =========================================================
+   MAP LAYERS
+========================================================= */
+
+const street=L.tileLayer(
+  "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    maxZoom:19,
+    attribution:"© OpenStreetMap contributors"
+  }
+);
+
+const satellite=L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {
+    maxZoom:19,
+    attribution:"Tiles © Esri"
+  }
+);
+
+const terrain=L.tileLayer(
+  "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+  {
+    maxZoom:17,
+    attribution:"© OpenTopoMap contributors"
+  }
+);
+
+const hot=L.tileLayer(
+  "https://tile-a.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+  {
+    maxZoom:19,
+    attribution:"© OpenStreetMap contributors, HOT"
+  }
+);
+
+const darkMap=L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+  {
+    maxZoom:16,
+    attribution:"Tiles © Esri"
+  }
+);
+
+const mapLayers={
+  street,
+  satellite,
+  terrain,
+  hot,
+  dark:darkMap
+};
+
+let activeMapLayer=
+  localStorage.getItem("pathikMapLayer") ||
+  "street";
+
+function switchMapLayer(type){
+
+  if(!mapLayers[type]) return;
+
+  Object.values(mapLayers).forEach(layer=>{
+
+    if(map.hasLayer(layer)){
+      map.removeLayer(layer);
+    }
+
+  });
+
+  mapLayers[type].addTo(map);
+
+  activeMapLayer=type;
+
+  document.querySelectorAll(".map-type")
+    .forEach(btn=>{
+      btn.classList.toggle(
+        "active",
+        btn.dataset.map===type
+      );
+    });
+
+  localStorage.setItem(
+    "pathikMapLayer",
+    type
+  );
+}
+
+switchMapLayer(activeMapLayer);
+
+/* =========================================================
+   ORIGINAL LEAFLET ZOOM CONTROL
+========================================================= */
+
+const nativeZoom=L.control.zoom({
+  position:"bottomright"
+});
+
+nativeZoom.addTo(map);
+
+$("zoomIn").onclick=()=>{
+  map.zoomIn();
+};
+
+$("zoomOut").onclick=()=>{
+  map.zoomOut();
+};
+
+/* =========================================================
+   UTILITIES
+========================================================= */
+
+function toast(message){
+
+  const t=$("toast");
+
+  t.textContent=message;
+
+  t.classList.add("show");
+
+  clearTimeout(window._toastTimer);
+
+  window._toastTimer=setTimeout(()=>{
+    t.classList.remove("show");
+  },2600);
+}
+
+function formatDistance(meters){
+
+  if(!Number.isFinite(meters)){
+    return "0 m";
+  }
+
+  if(meters<1000){
+    return Math.round(meters)+" m";
+  }
+
+  return (meters/1000).toFixed(2)+" km";
+}
+
+function formatDuration(sec){
+
+  sec=Math.max(0,Math.round(sec));
+
+  const h=Math.floor(sec/3600);
+  const m=Math.floor((sec%3600)/60);
+  const s=sec%60;
+
+  if(h){
+    return `${h}h ${m}m`;
+  }
+
+  if(m){
+    return `${m}m ${s}s`;
+  }
+
+  return `${s}s`;
+}
+
+function speak(text){
+
+  if(!$("voiceSetting").checked) return;
+
+  if(!("speechSynthesis" in window)) return;
+
+  speechSynthesis.cancel();
+
+  const u=
+    new SpeechSynthesisUtterance(text);
+
+  u.rate=.95;
+
+  speechSynthesis.speak(u);
+}
+
+function parseCoordinates(text){
+
+  const m=text.trim().match(
+    /^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/
+  );
+
+  if(!m) return null;
+
+  const lat=Number(m[1]);
+  const lng=Number(m[2]);
+
+  if(
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ){
+    return null;
+  }
+
+  return {lat,lng};
+}
+
+/* =========================================================
+   COLLAPSIBLE PANELS
+========================================================= */
+
+document.querySelectorAll(".panel-head")
+.forEach(head=>{
+
+  head.addEventListener("click",()=>{
+
+    const panel=head.parentElement;
+
+    panel.classList.toggle("open");
+
+    const arrow=
+      head.querySelector("span:last-child");
+
+    if(arrow){
+
+      arrow.textContent=
+        panel.classList.contains("open")
+        ? "⌃"
+        : "⌄";
+    }
+
+  });
+
+});
+
+/* =========================================================
+   THEME
+========================================================= */
+
+function applyTheme(value){
+
+  document.body.classList.remove(
+    "light",
+    "oled",
+    "hc"
+  );
+
+  if(value==="light"){
+    document.body.classList.add("light");
+  }
+
+  if(value==="oled"){
+    document.body.classList.add("oled");
+  }
+
+  if(value==="hc"){
+    document.body.classList.add("hc");
+  }
+
+  theme=value;
+
+  localStorage.setItem(
+    "pathikTheme",
+    value
+  );
+
+  document.querySelectorAll(".theme-choice")
+  .forEach(btn=>{
+
+    btn.classList.toggle(
+      "active",
+      btn.dataset.theme===value
+    );
+
+  });
+}
+
+applyTheme(theme);
+
+$("themeBtn").onclick=()=>{
+
+  const next=
+    theme==="dark" ? "light" :
+    theme==="light" ? "oled" :
+    theme==="oled" ? "hc" :
+    "dark";
+
+  applyTheme(next);
+};
+
+document.querySelectorAll(".theme-choice")
+.forEach(btn=>{
+
+  btn.onclick=()=>{
+    applyTheme(btn.dataset.theme);
+  };
+
+});
+
+$("largeText").onchange=e=>{
+
+  document.body.classList.toggle(
+    "large-text",
+    e.target.checked
+  );
+};
+
+$("highVisibility").onchange=e=>{
+
+  document.body.classList.toggle(
+    "hc",
+    e.target.checked
+  );
+};
+
+/* =========================================================
+   MAP VARIATIONS
+========================================================= */
+
+document.querySelectorAll(".map-type")
+.forEach(btn=>{
+
+  btn.onclick=()=>{
+    switchMapLayer(btn.dataset.map);
+  };
+
+});
+
+/* =========================================================
+   GEOCODING
+========================================================= */
+
+async function geocode(query){
+
+  const coords=parseCoordinates(query);
+
+  if(coords){
+
+    return {
+      lat:coords.lat,
+      lon:coords.lng,
+      display_name:
+        `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`
+    };
+  }
+
+  const url=
+    "https://nominatim.openstreetmap.org/search?"+
+    new URLSearchParams({
+      q:query,
+      format:"json",
+      limit:"1"
+    });
+
+  const response=
+    await fetch(url,{
+      headers:{
+        "Accept":"application/json"
+      }
+    });
+
+  const data=await response.json();
+
+  if(!data.length){
+    throw new Error("Place not found");
+  }
+
+  return data[0];
+}
+
+/* =========================================================
+   DRAGGABLE DESTINATION MARKER
+========================================================= */
+
+function destinationIcon(){
+  return L.divIcon({
+    className:"pathik-destination-pin-wrap",
+    html:'<div class="pathik-destination-pin"><span>●</span></div>',
+    iconSize:[48,56],
+    iconAnchor:[24,52],
+    popupAnchor:[0,-50]
+  });
+}
+
+let destinationGestureState=null;
+
+function lockMapGesturesForMarker(){
+  destinationGestureState={
+    dragging:!!map.dragging && map.dragging.enabled(),
+    touchZoom:!!map.touchZoom && map.touchZoom.enabled(),
+    doubleClickZoom:!!map.doubleClickZoom && map.doubleClickZoom.enabled(),
+    scrollWheelZoom:!!map.scrollWheelZoom && map.scrollWheelZoom.enabled(),
+    boxZoom:!!map.boxZoom && map.boxZoom.enabled(),
+    touchRotate:!!map.touchRotate && map.touchRotate.enabled()
+  };
+  [map.dragging,map.touchZoom,map.doubleClickZoom,map.scrollWheelZoom,map.boxZoom,map.touchRotate]
+    .forEach(handler=>handler && handler.disable && handler.disable());
+}
+
+function unlockMapGesturesAfterMarker(){
+  if(!destinationGestureState) return;
+  const state=destinationGestureState;
+  if(state.dragging && map.dragging) map.dragging.enable();
+  if(state.touchZoom && map.touchZoom) map.touchZoom.enable();
+  if(state.doubleClickZoom && map.doubleClickZoom) map.doubleClickZoom.enable();
+  if(state.scrollWheelZoom && map.scrollWheelZoom) map.scrollWheelZoom.enable();
+  if(state.boxZoom && map.boxZoom) map.boxZoom.enable();
+  if(state.touchRotate && map.touchRotate && map.touchRotate.enable) map.touchRotate.enable();
+  destinationGestureState=null;
+}
+
+async function reverseGeocode(lat,lng){
+  try{
+    const url="https://nominatim.openstreetmap.org/reverse?"+
+      new URLSearchParams({lat,lng,format:"json",zoom:"18"});
+    const response=await fetch(url,{headers:{"Accept":"application/json"}});
+    if(!response.ok) return null;
+    const data=await response.json();
+    return data.display_name || null;
+  }catch(e){ return null; }
+}
+
+function createDraggableDestination(lat,lng,name="Selected destination"){
+  lat=Number(lat); lng=Number(lng);
+  if(!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  if(destinationMarker){
+    destinationMarker.off();
+    map.removeLayer(destinationMarker);
+  }
+
+  destinationMarker=L.marker([lat,lng],{
+    draggable:true,
+    icon:destinationIcon(),
+    title:"Drag to move destination",
+    autoPan:false,
+    zIndexOffset:1500,
+    riseOnHover:true
+  }).addTo(map);
+
+  currentDestination={lat,lng,name};
+  destinationMarker.bindTooltip("Drag me to move destination",{direction:"top",offset:[0,-44],opacity:.9});
+
+  const icon=destinationMarker.getElement();
+  if(icon){
+    L.DomEvent.disableClickPropagation(icon);
+    L.DomEvent.disableScrollPropagation(icon);
+    L.DomEvent.on(icon,"pointerdown",L.DomEvent.stopPropagation);
+    L.DomEvent.on(icon,"touchstart",L.DomEvent.stopPropagation);
+  }
+
+  destinationMarker.on("dragstart",function(){
+    destinationMarker.closePopup();
+    lockMapGesturesForMarker();
+    followGPS=false;
+    if($("followSetting")) $("followSetting").checked=false;
+    map.getContainer().classList.add("destination-dragging");
+  });
+
+  destinationMarker.on("drag",function(e){
+    const p=e.target.getLatLng();
+    currentDestination={
+      lat:p.lat,
+      lng:p.lng,
+      name:currentDestination?.name || "Selected destination"
+    };
+    $("to").value=`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+  });
+
+  destinationMarker.on("dragend",async function(e){
+    const p=e.target.getLatLng();
+    const previousName=currentDestination?.name || "Selected destination";
+    currentDestination={lat:p.lat,lng:p.lng,name:previousName};
+    $("to").value=`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+    map.getContainer().classList.remove("destination-dragging");
+    unlockMapGesturesAfterMarker();
+
+    const placeName=await reverseGeocode(p.lat,p.lng);
+    if(placeName){
+      currentDestination.name=placeName;
+      $("to").value=placeName;
+      if(destinationMarker) destinationMarker.bindTooltip("Drag me to move destination",{direction:"top",offset:[0,-44],opacity:.9});
+    }
+
+    toast(`Destination moved to ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`);
+
+    // Recalculate only after the finger is released — never on every drag frame.
+    if(currentPosition && $("from").value.trim()===""){
+      $("from").value=`${currentPosition.coords.latitude.toFixed(6)}, ${currentPosition.coords.longitude.toFixed(6)}`;
+    }
+    if($("from").value.trim()) getRoute();
+  });
+
+  return destinationMarker;
+}
+
+/* =========================================================
+   MAP SEARCH
+========================================================= */
+
+async function searchMap(){
+
+  const q=$("mapSearch").value.trim();
+
+  if(!q) return;
+
+  try{
+
+    const result=
+      await geocode(q);
+
+    const lat=Number(result.lat);
+    const lng=Number(result.lon);
+
+    map.setView(
+      [lat,lng],
+      16
+    );
+
+    createDraggableDestination(
+      lat,
+      lng,
+      result.display_name
+    );
+
+    $("to").value=
+      result.display_name;
+
+  }catch(err){
+
+    toast("Place not found");
+
+  }
+}
+
+$("mapSearchBtn").onclick=
+  searchMap;
+
+$("mapSearch").addEventListener(
+  "keydown",
+  e=>{
+    if(e.key==="Enter"){
+      searchMap();
+    }
+  }
+);
+
+/* =========================================================
+   GPS
+========================================================= */
+
+function startGPS(){
+
+  if(!navigator.geolocation){
+
+    toast("GPS is not supported");
+
+    return;
+  }
+
+  if(gpsWatch!==null){
+
+    navigator.geolocation.clearWatch(
+      gpsWatch
+    );
+  }
+
+  gpsWatch=
+    navigator.geolocation.watchPosition(
+      position=>{
+        handleGPS(position);
+      },
+      ()=>{
+        toast(
+          "Unable to get GPS location"
+        );
+      },
+      {
+        enableHighAccuracy:true,
+        maximumAge:3000,
+        timeout:15000
+      }
+    );
+}
+
+function handleGPS(position){
+
+  currentPosition=position;
+
+  const lat=
+    position.coords.latitude;
+
+  const lng=
+    position.coords.longitude;
+
+  const accuracy=
+    position.coords.accuracy || 0;
+
+  if(!userMarker){
+
+    userMarker=
+      L.circleMarker(
+        [lat,lng],
+        {
+          radius:8,
+          color:"#2563eb",
+          weight:3,
+          fillColor:"#fff",
+          fillOpacity:1
+        }
+      ).addTo(map);
+
+  }else{
+
+    userMarker.setLatLng(
+      [lat,lng]
+    );
+
+  }
+
+  if(!accuracyCircle){
+
+    accuracyCircle=
+      L.circle(
+        [lat,lng],
+        {
+          radius:accuracy,
+          color:"#2563eb",
+          weight:1,
+          fillOpacity:.08
+        }
+      ).addTo(map);
+
+  }else{
+
+    accuracyCircle.setLatLng(
+      [lat,lng]
+    );
+
+    accuracyCircle.setRadius(
+      accuracy
+    );
+  }
+
+  if(followGPS){
+
+    map.panTo(
+      [lat,lng],
+      {
+        animate:true
+      }
+    );
+  }
+
+  if(recording){
+
+    recordPoint(
+      lat,
+      lng,
+      position.coords.speed || 0
+    );
+  }
+}
+
+$("locateBtn").onclick=()=>{
+
+  if(currentPosition){
+
+    const p=
+      currentPosition.coords;
+
+    map.setView(
+      [
+        p.latitude,
+        p.longitude
+      ],
+      Math.max(
+        map.getZoom(),
+        16
+      )
+    );
+
+  }else{
+
+    startGPS();
+
+    toast(
+      "Requesting GPS location…"
+    );
+  }
+};
+
+function resetBearing(){
+  if(typeof map.setBearing==="function"){
+    map.setBearing(0);
+    toast("North-up");
+  }else{
+    toast("Compass rotation is unavailable");
+  }
+}
+
+$("compassBtn").onclick=resetBearing;
+$("orientationBtn").onclick=resetBearing;
+
+map.on("dragstart",()=>{
+
+  followGPS=false;
+
+  $("followSetting").checked=false;
+});
+
+$("followSetting").onchange=e=>{
+
+  followGPS=e.target.checked;
+
+};
+
+/* =========================================================
+   ROUTING
+========================================================= */
+
+function osrmProfile(){
+
+  if(
+    travelMode==="foot" ||
+    travelMode==="walking" ||
+    travelMode==="hiking"
+  ){
+    return "foot";
+  }
+
+  if(
+    travelMode==="cycling" ||
+    travelMode==="bicycle"
+  ){
+    return "bike";
+  }
+
+  return "car";
+}
+
+async function getRoute(){
+
+  const fromText=
+    $("from").value.trim();
+
+  const toText=
+    $("to").value.trim();
+
+  if(!fromText && !currentPosition){
+
+    toast(
+      "Enter a starting point"
+    );
+
+    return;
+  }
+
+  if(!toText && !currentDestination){
+
+    toast(
+      "Enter a destination"
+    );
+
+    return;
+  }
+
+  try{
+
+    let from;
+    let to;
+
+    if(fromText){
+
+      const r=
+        await geocode(fromText);
+
+      from={
+        lat:Number(r.lat),
+        lng:Number(r.lon)
+      };
+
+    }else{
+
+      from={
+        lat:
+          currentPosition.coords.latitude,
+        lng:
+          currentPosition.coords.longitude
+      };
+    }
+
+    if(toText){
+
+      const r=
+        await geocode(toText);
+
+      to={
+        lat:Number(r.lat),
+        lng:Number(r.lon),
+        name:r.display_name
+      };
+
+    }else{
+
+      to=currentDestination;
+    }
+
+    currentDestination=to;
+
+    createDraggableDestination(
+      to.lat,
+      to.lng,
+      to.name || "Selected destination"
+    );
+
+    const profile=
+      osrmProfile();
+
+    const coords=
+      `${from.lng},${from.lat};`+
+      `${to.lng},${to.lat}`;
+
+    let url=
+      `https://router.project-osrm.org/route/v1/`+
+      `${profile}/${coords}`+
+      `?overview=full`+
+      `&geometries=geojson`+
+      `&steps=true`+
+      `&alternatives=3`;
+
+    const response=
+      await fetch(url);
+
+    if(!response.ok){
+
+      throw new Error(
+        "Routing failed"
+      );
+    }
+
+    const data=
+      await response.json();
+
+    if(
+      data.code!=="Ok" ||
+      !data.routes?.length
+    ){
+
+      throw new Error(
+        "No route"
+      );
+    }
+
+    routeData=[...data.routes];
+
+    // OSRM does not apply Pathik's UI preference by itself.
+    // Sort the returned alternatives so the selected route matches
+    // the requested preference.
+    if(routePreference==="shortest"){
+      routeData.sort(
+        (a,b)=>a.distance-b.distance
+      );
+    }else if(routePreference==="fastest"){
+      routeData.sort(
+        (a,b)=>a.duration-b.duration
+      );
+    }else{
+      routeData.sort(
+        (a,b)=>{
+          const aScore=
+            a.duration +
+            (a.distance/20);
+          const bScore=
+            b.duration +
+            (b.distance/20);
+          return aScore-bScore;
+        }
+      );
+    }
+
+    selectedRouteIndex=0;
+
+    drawRoutes();
+
+    renderRouteResult();
+
+    renderInstructions(
+      routeData[selectedRouteIndex]
+    );
+
+    map.fitBounds(
+      L.geoJSON(
+        routeData[selectedRouteIndex].geometry
+      ).getBounds(),
+      {
+        padding:[30,30]
+      }
+    );
+
+  }catch(err){
+
+    console.error(err);
+
+    toast(
+      "Could not calculate route"
+    );
+  }
+}
+
+function clearRoutes(){
+
+  routeLayers.forEach(layer=>{
+
+    if(map.hasLayer(layer)){
+      map.removeLayer(layer);
+    }
+
+  });
+
+  routeLayers=[];
+
+  routeData=[];
+
+  selectedRouteIndex=0;
+
+  $("routeResult").classList.remove(
+    "show"
+  );
+
+  $("routeResult").innerHTML="";
+
+  $("instructions").innerHTML="";
+}
+
+function drawRoutes(){
+
+  routeLayers.forEach(layer=>{
+
+    if(map.hasLayer(layer)){
+      map.removeLayer(layer);
+    }
+
+  });
+
+  routeLayers=[];
+
+  routeData.forEach(
+    (route,index)=>{
+
+      const color=
+        index===selectedRouteIndex
+        ? "#2563eb"
+        : "#64748b";
+
+      const weight=
+        index===selectedRouteIndex
+        ? 7
+        : 4;
+
+      const layer=
+        L.geoJSON(
+          route.geometry,
+          {
+            style:{
+              color,
+              weight,
+              opacity:
+                index===selectedRouteIndex
+                ? .95
+                : .55
+            }
+          }
+        ).addTo(map);
+
+      layer.on("click",()=>{
+
+        selectedRouteIndex=index;
+
+        drawRoutes();
+
+        renderRouteResult();
+
+        renderInstructions(route);
+      });
+
+      routeLayers.push(layer);
+
+    }
+  );
+}
+
+function renderRouteResult(){
+
+  if(!routeData.length) return;
+
+  const box=
+    $("routeResult");
+
+  box.innerHTML=
+    `<b>${routeData.length} route option`+
+    `${routeData.length>1?"s":""}</b>`;
+
+  routeData.forEach(
+    (route,index)=>{
+
+      let label=
+        index===0
+        ? "Recommended"
+        : "Alternative";
+
+      if(
+        routePreference==="shortest" &&
+        index===0
+      ){
+        label="Shortest";
+      }
+
+      if(
+        routePreference==="fastest" &&
+        index===0
+      ){
+        label="Fastest";
+      }
+
+      const div=
+        document.createElement(
+          "div"
+        );
+
+      div.className=
+        "route-choice"+
+        (
+          index===selectedRouteIndex
+          ? " active"
+          : ""
+        );
+
+      div.innerHTML=
+        `<strong>${label}</strong>`+
+        `<small>`+
+        `${formatDistance(route.distance)}`+
+        ` · `+
+        `${formatDuration(route.duration)}`+
+        `</small>`;
+
+      div.onclick=()=>{
+
+        selectedRouteIndex=index;
+
+        drawRoutes();
+
+        renderRouteResult();
+
+        renderInstructions(route);
+      };
+
+      box.appendChild(div);
+
+    }
+  );
+
+  box.classList.add("show");
+}
+
+function renderInstructions(route){
+
+  const box=
+    $("instructions");
+
+  box.innerHTML="";
+
+  if(
+    !route?.legs?.length
+  ){
+    return;
+  }
+
+  const steps=
+    route.legs.flatMap(
+      leg=>leg.steps || []
+    );
+
+  steps.slice(0,30)
+    .forEach((step,i)=>{
+
+      const div=
+        document.createElement(
+          "div"
+        );
+
+      div.className="turn";
+
+      const maneuver=
+        step.maneuver || {};
+
+      const type=
+        maneuver.type || "";
+
+      const modifier=
+        maneuver.modifier || "";
+
+      let icon="➡️";
+
+      if(type==="depart"){
+        icon="🟢";
+      }
+
+      if(type==="arrive"){
+        icon="🏁";
+      }
+
+      if(type==="turn"){
+
+        icon=
+          modifier.includes("left")
+          ? "↰"
+          : modifier.includes("right")
+          ? "↱"
+          : "↪️";
+      }
+
+      if(type==="roundabout"){
+        icon="🔄";
+      }
+
+      div.innerHTML=
+        `${icon} <b>${i+1}.</b> `+
+        `${step.name || "Unnamed road"} `+
+        `<small>· `+
+        `${formatDistance(step.distance || 0)}`+
+        `</small>`;
+
+      box.appendChild(div);
+
+    });
+}
+
+$("routeBtn").onclick=
+  getRoute;
+
+document.querySelectorAll("[data-mode]")
+.forEach(btn=>{
+
+  btn.onclick=()=>{
+
+    travelMode=
+      btn.dataset.mode;
+
+    document.querySelectorAll(
+      "[data-mode]"
+    ).forEach(b=>{
+      b.classList.toggle(
+        "active",
+        b===btn
+      );
+    });
+
+  };
+
+});
+
+document.querySelectorAll("[data-pref]")
+.forEach(btn=>{
+
+  btn.onclick=()=>{
+
+    routePreference=
+      btn.dataset.pref;
+
+    document.querySelectorAll(
+      "[data-pref]"
+    ).forEach(b=>{
+      b.classList.toggle(
+        "active",
+        b===btn
+      );
+    });
+
+  };
+
+});
+
+$("swapBtn").onclick=()=>{
+
+  const a=$("from").value;
+
+  $("from").value=
+    $("to").value;
+
+  $("to").value=a;
+};
+
+/* =========================================================
+   DISTANCE MEASUREMENT
+========================================================= */
+
+let measureMode=false;
+let measurePoints=[];
+let measureLine=null;
+let measureMarkers=[];
+let measureLabels=[];
+let measureTotal=0;
+
+function showMeasureStatus(text){
+
+  const box=
+    $("measureStatus");
+
+  box.textContent=text;
+
+  box.classList.add("show");
+}
+
+function hideMeasureStatus(){
+
+  $("measureStatus")
+    .classList.remove("show");
+}
+
+function startMeasurement(){
+
+  measureMode=true;
+
+  $("measureBtn")
+    .classList.add("active");
+
+  map.getContainer()
+    .classList.add(
+      "measure-active"
+    );
+
+  showMeasureStatus(
+    "📏 Tap points on the map to measure distance"
+  );
+}
+
+function stopMeasurement(){
+
+  measureMode=false;
+
+  $("measureBtn")
+    .classList.remove("active");
+
+  map.getContainer()
+    .classList.remove(
+      "measure-active"
+    );
+
+  hideMeasureStatus();
+}
+
+function clearMeasure(){
+
+  stopMeasurement();
+
+  measurePoints=[];
+
+  measureTotal=0;
+
+  if(measureLine){
+
+    map.removeLayer(
+      measureLine
+    );
+
+    measureLine=null;
+  }
+
+  measureMarkers.forEach(
+    marker=>{
+
+      if(map.hasLayer(marker)){
+        map.removeLayer(marker);
+      }
+
+    }
+  );
+
+  measureLabels.forEach(
+    label=>{
+
+      if(map.hasLayer(label)){
+        map.removeLayer(label);
+      }
+
+    }
+  );
+
+  measureMarkers=[];
+  measureLabels=[];
+}
+
+function addMeasurePoint(latlng){
+
+  measurePoints.push(latlng);
+
+  const marker=
+    L.circleMarker(
+      latlng,
+      {
+        radius:7,
+        weight:3,
+        color:"#2563eb",
+        fillColor:"#fff",
+        fillOpacity:1,
+        interactive:false
+      }
+    ).addTo(map);
+
+  measureMarkers.push(marker);
+
+  if(!measureLine){
+
+    measureLine=
+      L.polyline(
+        measurePoints,
+        {
+          color:"#2563eb",
+          weight:5,
+          opacity:.95,
+          dashArray:"10 7",
+          lineCap:"round",
+          lineJoin:"round",
+          interactive:false
+        }
+      ).addTo(map);
+
+  }else{
+
+    measureLine.setLatLngs(
+      measurePoints
+    );
+  }
+
+  measureTotal=0;
+
+  for(
+    let i=1;
+    i<measurePoints.length;
+    i++
+  ){
+
+    measureTotal +=
+      map.distance(
+        measurePoints[i-1],
+        measurePoints[i]
+      );
+  }
+
+  if(measurePoints.length>=2){
+
+    const a=
+      measurePoints[
+        measurePoints.length-2
+      ];
+
+    const b=
+      measurePoints[
+        measurePoints.length-1
+      ];
+
+    const segment=
+      map.distance(a,b);
+
+    const midpoint=
+      L.latLng(
+        (a.lat+b.lat)/2,
+        (a.lng+b.lng)/2
+      );
+
+    const label=
+      L.marker(
+        midpoint,
+        {
+          interactive:false,
+          icon:L.divIcon({
+            className:
+              "pathik-measure-label",
+            html:
+              `<span>`+
+              `${formatDistance(segment)}`+
+              `</span>`
+          })
+        }
+      ).addTo(map);
+
+    measureLabels.push(label);
+  }
+
+  if(measurePoints.length===1){
+
+    showMeasureStatus(
+      "📍 First point placed — tap another point"
+    );
+
+  }else{
+
+    showMeasureStatus(
+      `📏 Total distance: `+
+      `${formatDistance(measureTotal)}`+
+      ` · ${measurePoints.length} points`
+    );
+  }
+}
+
+$("measureBtn").onclick=()=>{
+
+  if(measureMode){
+
+    stopMeasurement();
+
+  }else{
+
+    startMeasurement();
+  }
+
+};
+
+map.on("click",e=>{
+
+  /*
+    IMPORTANT:
+    When measuring, normal map click behavior
+    is bypassed so the measurement point is
+    captured instead.
+  */
+
+  if(measureMode){
+
+    addMeasurePoint(
+      e.latlng
+    );
+
+    return;
+  }
+
+});
+
+/* =========================================================
+   CLEAR MAP
+========================================================= */
+
+$("clearBtn").onclick=()=>{
+
+  clearRoutes();
+
+  clearMeasure();
+
+  if(destinationMarker){
+
+    map.removeLayer(
+      destinationMarker
+    );
+
+    destinationMarker=null;
+  }
+
+  currentDestination=null;
+
+  $("to").value="";
+
+  toast("Map cleared");
+};
+
+/* =========================================================
+   SHARING
+========================================================= */
+
+async function sharePathikLocation(){
+
+  let text="Pathik";
+
+  if(currentDestination){
+
+    text+=
+      ` destination: `+
+      `${currentDestination.lat.toFixed(6)}, `+
+      `${currentDestination.lng.toFixed(6)}`;
+
+  }else if(currentPosition){
+
+    text+=
+      ` location: `+
+      `${currentPosition.coords.latitude.toFixed(6)}, `+
+      `${currentPosition.coords.longitude.toFixed(6)}`;
+
+  }else{
+
+    text+=" location unavailable";
+  }
+
+  try{
+
+    if(navigator.share){
+
+      await navigator.share({
+        title:"Pathik",
+        text
+      });
+
+    }else{
+
+      await navigator.clipboard.writeText(
+        text
+      );
+
+      toast("Location copied");
+    }
+
+  }catch(e){}
+}
+
+$("shareBtn").onclick=
+  sharePathikLocation;
+
+$("shareLocation").onclick=
+  sharePathikLocation;
+
+/* =========================================================
+   SPECIALIZED NAVIGATION
+========================================================= */
+
+const specialInfo={
+
+  car:[
+    "Car navigation",
+    "Standard road navigation using the available routing profile."
+  ],
+
+  motorcycle:[
+    "Motorcycle navigation",
+    "Motorcycle-oriented planning. Public routing data may not provide every motorcycle-specific restriction."
+  ],
+
+  bicycle:[
+    "Bicycle navigation",
+    "Uses bicycle routing where supported by the public routing service."
+  ],
+
+  walking:[
+    "Walking navigation",
+    "Pedestrian routing using the available foot profile."
+  ],
+
+  hiking:[
+    "Hiking navigation",
+    "Outdoor walking planning. Trail accessibility depends on OpenStreetMap data."
+  ],
+
+  offroad:[
+    "Off-road navigation",
+    "Outdoor/off-road planning. Public routing cannot guarantee access to private or restricted tracks."
+  ],
+
+  truck:[
+    "Truck navigation",
+    "Truck planning mode. Height, weight and hazmat restrictions cannot be guaranteed by the public routing profile."
+  ],
+
+  wheelchair:[
+    "Wheelchair navigation",
+    "Accessibility-aware planning. Curb, surface and entrance accessibility depend on mapped data."
+  ],
+
+  ev:[
+    "EV navigation",
+    "EV planning mode. Battery consumption and charger availability depend on available data."
+  ]
+
+};
+
+document.querySelectorAll(".special")
+.forEach(btn=>{
+
+  btn.onclick=()=>{
+
+    document.querySelectorAll(".special")
+      .forEach(b=>{
+        b.classList.remove(
+          "active"
+        );
+      });
+
+    btn.classList.add("active");
+
+    const info=
+      specialInfo[
+        btn.dataset.special
+      ];
+
+    $("specialTitle")
+      .textContent=info[0];
+
+    $("specialDescription")
+      .textContent=info[1];
+
+    if(
+      btn.dataset.special==="motorcycle"
+    ){
+
+      travelMode="motorcycle";
+
+    }else if(
+      btn.dataset.special==="bicycle"
+    ){
+
+      travelMode="cycling";
+
+    }else if(
+      btn.dataset.special==="walking" ||
+      btn.dataset.special==="hiking" ||
+      btn.dataset.special==="wheelchair"
+    ){
+
+      travelMode="foot";
+
+    }else{
+
+      travelMode="driving";
+    }
+
+    document.querySelectorAll(
+      "[data-mode]"
+    ).forEach(b=>{
+
+      b.classList.toggle(
+        "active",
+        b.dataset.mode===travelMode
+      );
+
+    });
+
+  };
+
+});
+
+/* =========================================================
+   MULTI STOP
+========================================================= */
+
+function renderStops(){
+
+  const box=$("stopList");
+
+  box.innerHTML="";
+
+  stops.forEach(
+    (stop,index)=>{
+
+      const row=
+        document.createElement(
+          "div"
+        );
+
+      row.className="saved";
+
+      const name=
+        document.createElement(
+          "span"
+        );
+
+      name.textContent=
+        `${index+1}. ${stop.name}`;
+
+      const controls=
+        document.createElement(
+          "div"
+        );
+
+      const nav=
+        document.createElement(
+          "button"
+        );
+
+      nav.textContent="Go";
+
+      nav.onclick=()=>{
+
+        $("to").value=
+          `${stop.lat}, ${stop.lng}`;
+
+        currentDestination={
+          lat:stop.lat,
+          lng:stop.lng,
+          name:stop.name
+        };
+
+        createDraggableDestination(
+          stop.lat,
+          stop.lng,
+          stop.name
+        );
+
+        getRoute();
+      };
+
+      const del=
+        document.createElement(
+          "button"
+        );
+
+      del.textContent="×";
+
+      del.style.marginLeft="4px";
+
+      del.onclick=()=>{
+
+        stops.splice(index,1);
+
+        saveStops();
+
+        renderStops();
+      };
+
+      controls.append(
+        nav,
+        del
+      );
+
+      row.append(
+        name,
+        controls
+      );
+
+      box.appendChild(row);
+    }
+  );
+}
+
+function saveStops(){
+
+  localStorage.setItem(
+    "pathikStops",
+    JSON.stringify(stops)
+  );
+}
+
+$("addStopBtn").onclick=async()=>{
+
+  const value=
+    $("stopInput").value.trim();
+
+  if(!value) return;
+
+  try{
+
+    const result=
+      await geocode(value);
+
+    stops.push({
+      name:result.display_name,
+      lat:Number(result.lat),
+      lng:Number(result.lon)
+    });
+
+    saveStops();
+
+    renderStops();
+
+    $("stopInput").value="";
+
+  }catch(e){
+
+    toast("Stop not found");
+  }
+};
+
+$("optimizeBtn").onclick=()=>{
+
+  if(stops.length<2){
+
+    toast(
+      "Add at least two stops"
+    );
+
+    return;
+  }
+
+  stops.reverse();
+
+  saveStops();
+
+  renderStops();
+
+  toast(
+    "Stop order optimized"
+  );
+};
+
+$("saveTripBtn").onclick=()=>{
+
+  let trips=[];
+  try{
+    const stored=
+      JSON.parse(
+        localStorage.getItem(
+          "pathikTrips"
+        ) || "[]"
+      );
+    trips=
+      Array.isArray(stored)
+      ? stored
+      : [];
+  }catch(e){
+    trips=[];
+  }
+
+  trips.push({
+    date:new Date().toISOString(),
+    from:$("from").value,
+    to:$("to").value,
+    stops
+  });
+
+  localStorage.setItem(
+    "pathikTrips",
+    JSON.stringify(trips)
+  );
+
+  toast("Trip saved");
+};
+
+renderStops();
+
+/* =========================================================
+   SAVED PLACES
+========================================================= */
+
+function renderSaved(){
+
+  const box=$("savedList");
+
+  box.innerHTML="";
+
+  if(!savedPlaces.length){
+
+    box.innerHTML=
+      `<div class="status">`+
+      `No saved places yet.`+
+      `</div>`;
+
+    return;
+  }
+
+  savedPlaces.forEach(
+    (place,index)=>{
+
+      const row=
+        document.createElement(
+          "div"
+        );
+
+      row.className="saved";
+
+      const text=
+        document.createElement(
+          "span"
+        );
+
+      text.textContent=
+        place.name;
+
+      const controls=
+        document.createElement(
+          "div"
+        );
+
+      const go=
+        document.createElement(
+          "button"
+        );
+
+      go.textContent="Go";
+
+      go.onclick=()=>{
+
+        $("to").value=
+          `${place.lat}, ${place.lng}`;
+
+        currentDestination={
+          lat:place.lat,
+          lng:place.lng,
+          name:place.name
+        };
+
+        createDraggableDestination(
+          place.lat,
+          place.lng,
+          place.name
+        );
+
+        getRoute();
+      };
+
+      const del=
+        document.createElement(
+          "button"
+        );
+
+      del.textContent="×";
+
+      del.style.marginLeft="4px";
+
+      del.onclick=()=>{
+
+        savedPlaces.splice(
+          index,
+          1
+        );
+
+        localStorage.setItem(
+          "pathikSaved",
+          JSON.stringify(savedPlaces)
+        );
+
+        renderSaved();
+      };
+
+      controls.append(
+        go,
+        del
+      );
+
+      row.append(
+        text,
+        controls
+      );
+
+      box.appendChild(row);
+    }
+  );
+}
+
+$("saveCurrentBtn").onclick=()=>{
+
+  if(!currentDestination){
+
+    toast(
+      "Select a destination first"
+    );
+
+    return;
+  }
+
+  savedPlaces.push({
+    name:
+      currentDestination.name ||
+      `${currentDestination.lat}, ${currentDestination.lng}`,
+
+    lat:currentDestination.lat,
+
+    lng:currentDestination.lng
+  });
+
+  localStorage.setItem(
+    "pathikSaved",
+    JSON.stringify(savedPlaces)
+  );
+
+  renderSaved();
+
+  toast(
+    "Destination saved"
+  );
+};
+
+$("clearSavedBtn").onclick=()=>{
+
+  savedPlaces=[];
+
+  localStorage.removeItem(
+    "pathikSaved"
+  );
+
+  renderSaved();
+};
+
+renderSaved();
+
+/* =========================================================
+   NEARBY
+========================================================= */
+
+const nearbyQueries={
+
+  hospital:'["amenity"="hospital"]',
+
+  police:'["amenity"="police"]',
+
+  fuel:'["amenity"="fuel"]',
+
+  restaurant:'["amenity"="restaurant"]',
+
+  parking:'["amenity"="parking"]',
+
+  pharmacy:'["amenity"="pharmacy"]'
+};
+
+async function findNearby(type){
+
+  let center;
+
+  if(currentPosition){
+
+    center=[
+      currentPosition.coords.latitude,
+      currentPosition.coords.longitude
+    ];
+
+  }else{
+
+    center=map.getCenter();
+  }
+
+  const q=
+    nearbyQueries[type];
+
+  const query=
+    `[out:json][timeout:15];`+
+    `nwr${q}`+
+    `(around:3000,`+
+    `${center[0]},${center[1]});`+
+    `out center 20;`;
+
+  try{
+
+    const response=
+      await fetch(
+        "https://overpass-api.de/api/interpreter",
+        {
+          method:"POST",
+          body:query
+        }
+      );
+
+    const data=
+      await response.json();
+
+    const box=$("poiList");
+
+    box.innerHTML="";
+
+    if(!data.elements.length){
+
+      box.innerHTML=
+        `<div class="status">`+
+        `No nearby places found.`+
+        `</div>`;
+
+      return;
+    }
+
+    data.elements.forEach(el=>{
+
+      const lat=
+        el.lat ??
+        el.center?.lat;
+
+      const lng=
+        el.lon ??
+        el.center?.lon;
+
+      if(
+        lat==null ||
+        lng==null
+      ){
+        return;
+      }
+
+      const name=
+        el.tags?.name ||
+        type.charAt(0).toUpperCase()+
+        type.slice(1);
+
+      const row=
+        document.createElement(
+          "div"
+        );
+
+      row.className="poi";
+
+      const label=
+        document.createElement(
+          "span"
+        );
+
+      label.textContent=name;
+
+      const go=
+        document.createElement(
+          "button"
+        );
+
+      go.textContent=
+        "Navigate";
+
+      go.onclick=()=>{
+
+        $("to").value=
+          `${lat}, ${lng}`;
+
+        currentDestination={
+          lat,
+          lng,
+          name
+        };
+
+        createDraggableDestination(
+          lat,
+          lng,
+          name
+        );
+
+        getRoute();
+      };
+
+      row.append(
+        label,
+        go
+      );
+
+      box.appendChild(row);
+    });
+
+  }catch(e){
+
+    toast(
+      "Nearby search failed"
+    );
+  }
+}
+
+document.querySelectorAll(
+  ".nearby-type"
+).forEach(btn=>{
+
+  btn.onclick=()=>{
+    findNearby(
+      btn.dataset.type
+    );
+  };
+
+});
+
+$("nearbyBtn").onclick=()=>{
+
+  const panel=
+    [...document.querySelectorAll(".panel")]
+    .find(
+      p=>p.querySelector(
+        ".nearby-type"
+      )
+    );
+
+  if(panel){
+
+    panel.classList.add(
+      "open"
+    );
+  }
+
+  findNearby(
+    "restaurant"
+  );
+};
+
+/* =========================================================
+   TRIP RECORDING
+========================================================= */
+
+function recordPoint(
+  lat,
+  lng,
+  speed
+){
+
+  const point={
+    lat,
+    lng,
+    time:new Date().toISOString(),
+    speed
+  };
+
+  if(lastRecordPoint){
+
+    const d=
+      map.distance(
+        [
+          lastRecordPoint.lat,
+          lastRecordPoint.lng
+        ],
+        [lat,lng]
+      );
+
+    if(d<500){
+
+      recordingDistance+=d;
+    }
+  }
+
+  lastRecordPoint=point;
+
+  recordingPoints.push(
+    point
+  );
+
+  const kmh=
+    Math.max(
+      0,
+      speed*3.6
+    );
+
+  if(kmh>recordingMaxSpeed){
+
+    recordingMaxSpeed=kmh;
+  }
+
+  updateStats();
+}
+
+function updateStats(){
+
+  $("statDistance")
+    .textContent=
+    formatDistance(
+      recordingDistance
+    );
+
+  const elapsed=
+    recording
+    ? (Date.now()-recordingStart)/1000
+    : recordingElapsed;
+
+  $("statTime")
+    .textContent=
+    formatDuration(
+      elapsed
+    );
+
+  const avg=
+    elapsed>0
+    ? (recordingDistance/1000)/
+      (elapsed/3600)
+    : 0;
+
+  $("statSpeed")
+    .textContent=
+    avg.toFixed(1)+
+    " km/h";
+
+  $("statMax")
+    .textContent=
+    recordingMaxSpeed.toFixed(1)+
+    " km/h";
+}
+
+$("recordBtn").onclick=()=>{
+
+  if(recording){
+
+    recording=false;
+
+    recordingElapsed=
+      Math.max(
+        0,
+        (Date.now()-recordingStart)/1000
+      );
+
+    clearInterval(
+      recordingTimer
+    );
+
+    updateStats();
+
+    $("recordBtn")
+      .textContent=
+      "● Start recording";
+
+    $("recordBtn")
+      .classList.remove(
+        "primary"
+      );
+
+    toast(
+      "Trip recording stopped"
+    );
+
+    return;
+  }
+
+  recording=true;
+
+  recordingPoints=[];
+
+  recordingDistance=0;
+
+  recordingStart=
+    Date.now();
+
+  recordingElapsed=0;
+
+  recordingMaxSpeed=0;
+
+  lastRecordPoint=null;
+
+  $("recordBtn")
+    .textContent=
+    "■ Stop recording";
+
+  $("recordBtn")
+    .classList.add(
+      "primary"
+    );
+
+  recordingTimer=
+    setInterval(
+      updateStats,
+      1000
+    );
+
+  toast(
+    "Trip recording started"
+  );
+
+  startGPS();
+};
+
+$("exportGpxBtn").onclick=()=>{
+
+  if(!recordingPoints.length){
+
+    toast(
+      "No recorded GPS track"
+    );
+
+    return;
+  }
+
+  let gpx=
+`<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1"
+creator="Pathik"
+xmlns="http://www.topografix.com/GPX/1/1">
+<trk>
+<name>Pathik Trip</name>
+<trkseg>`;
+
+  recordingPoints.forEach(p=>{
+
+    gpx+=
+      `<trkpt lat="${p.lat}" lon="${p.lng}">`+
+      `<time>${p.time}</time>`+
+      `</trkpt>`;
+
+  });
+
+  gpx+=
+`</trkseg>
+</trk>
+</gpx>`;
+
+  const blob=
+    new Blob(
+      [gpx],
+      {
+        type:"application/gpx+xml"
+      }
+    );
+
+  const url=
+    URL.createObjectURL(blob);
+
+  const a=
+    document.createElement("a");
+
+  a.href=url;
+
+  a.download=
+    "pathik-trip-"+Date.now()+
+    ".gpx";
+
+  a.click();
+
+  URL.revokeObjectURL(url);
+};
+
+/* =========================================================
+   SAFETY
+========================================================= */
+
+$("callEmergency").onclick=()=>{
+
+  const number=
+    $("emergencyNumber")
+      .value.trim() ||
+    "112";
+
+  location.href=
+    "tel:"+number;
+};
+
+$("safetyStatus").onclick=()=>{
+
+  if(!currentPosition){
+
+    toast(
+      "GPS location is unavailable"
+    );
+
+    return;
+  }
+
+  const accuracy=
+    currentPosition.coords
+      .accuracy;
+
+  toast(
+    `GPS accuracy ${Math.round(accuracy)} m`
+  );
+};
+
+/* =========================================================
+   NETWORK
+========================================================= */
+
+function updateNetwork(){
+
+  $("networkStatus").innerHTML=
+    navigator.onLine
+
+    ?
+
+    `<span class="good">● Online</span>`+
+    `<br>Internet connection available.`
+
+    :
+
+    `<span class="warn">● Offline</span>`+
+    `<br>Saved information remains available locally. `+
+    `Live search and routing may not work.`;
+}
+
+window.addEventListener(
+  "online",
+  updateNetwork
+);
+
+window.addEventListener(
+  "offline",
+  updateNetwork
+);
+
+updateNetwork();
+
+/* =========================================================
+   CLEAR ALL PATHIK DATA
+========================================================= */
+
+$("clearDataBtn").onclick=()=>{
+
+  if(!confirm(
+    "Clear Pathik saved places, trips, stops and settings?"
+  )){
+    return;
+  }
+
+  localStorage.removeItem(
+    "pathikTheme"
+  );
+
+  localStorage.removeItem(
+    "pathikMapLayer"
+  );
+
+  localStorage.removeItem(
+    "pathikSaved"
+  );
+
+  localStorage.removeItem(
+    "pathikStops"
+  );
+
+  localStorage.removeItem(
+    "pathikTrips"
+  );
+
+  toast(
+    "Pathik data cleared"
+  );
+
+  setTimeout(
+    ()=>{
+      location.reload();
+    },
+    700
+  );
+};
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+startGPS();
+
+window.addEventListener(
+  "resize",
+  ()=>{
+    setTimeout(
+      ()=>{
+        map.invalidateSize();
+      },
+      150
+    );
+  }
+);
+
+/* =========================================================
+   PWA SERVICE WORKER + INSTALL
+========================================================= */
+let deferredInstallPrompt=null;
+const installBtn=document.getElementById("installBtn");
+const installHelp=document.getElementById("installHelp");
+
+function isStandalone(){
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+}
+
+function updateInstallUI(){
+  if(!installBtn) return;
+  if(isStandalone()){
+    installBtn.hidden=true;
+    if(installHelp) installHelp.textContent="Pathik is installed and running as an app.";
+    return;
+  }
+  if(deferredInstallPrompt){
+    installBtn.hidden=false;
+    if(installHelp) installHelp.textContent="Install Pathik on this device for a dedicated app window.";
+  }else{
+    installBtn.hidden=true;
+    if(installHelp) installHelp.textContent="Use your browser's Install app / Add to Home Screen option. Pathik is PWA-ready.";
+  }
+}
+
+window.addEventListener("beforeinstallprompt",event=>{
+  event.preventDefault();
+  deferredInstallPrompt=event;
+  updateInstallUI();
+});
+
+window.addEventListener("appinstalled",()=>{
+  deferredInstallPrompt=null;
+  updateInstallUI();
+  toast("Pathik installed successfully");
+});
+
+if(installBtn){
+  installBtn.addEventListener("click",async()=>{
+    if(!deferredInstallPrompt){
+      toast("Open your browser menu and choose Install Pathik / Add to Home Screen");
+      return;
+    }
+    const prompt=deferredInstallPrompt;
+    deferredInstallPrompt=null;
+    updateInstallUI();
+    try{
+      await prompt.prompt();
+      await prompt.userChoice;
+    }catch(e){}
+    updateInstallUI();
+  });
+}
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",async()=>{
+    try{
+      const reg=await navigator.serviceWorker.register("./sw.js",{scope:"./",updateViaCache:"none"});
+      if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
+      reg.update().catch(()=>{});
+    }catch(e){}
+    updateInstallUI();
+  });
+}
+
+window.matchMedia("(display-mode: standalone)").addEventListener?.("change",updateInstallUI);
+updateInstallUI();
+</script>
+
+</body>
+</html>
