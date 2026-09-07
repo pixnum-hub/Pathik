@@ -2135,6 +2135,27 @@ async function reverseGeocode(lat,lng){
   }catch(e){ return null; }
 }
 
+async function reverseGeocodeDetails(lat,lng){
+  try{
+    const url="https://nominatim.openstreetmap.org/reverse?"+
+      new URLSearchParams({lat,lng,format:"json",zoom:"18",addressdetails:"1"});
+    const response=await fetch(url,{headers:{"Accept":"application/json"}});
+    if(!response.ok) return null;
+    const data=await response.json();
+    const a=data.address||{};
+    const name=data.name||a.amenity||a.shop||a.tourism||a.leisure||a.road||"Selected location";
+    const area=[a.neighbourhood,a.suburb,a.city_district,a.city,a.town,a.village,a.state,a.country]
+      .filter(Boolean).filter((v,i,arr)=>arr.indexOf(v)===i).join(", ");
+    return {name,displayName:data.display_name||"",type:data.type||data.category||"location",address:a,area};
+  }catch(e){return null;}
+}
+
+function distanceMarkerPopupHtml(info,lat,lng,index){
+  const safe=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+  const road=info?.address?.road||info?.address?.pedestrian||info?.address?.footway||"";
+  return `<div style="min-width:210px;line-height:1.45"><strong>📍 Point ${index+1}: ${safe(info?.name||"Measurement point")}</strong>${road?`<div>🛣️ ${safe(road)}</div>`:""}${info?.area?`<div>📌 ${safe(info.area)}</div>`:""}<div>ℹ️ ${safe(info?.type||"location")}</div><div style="margin-top:4px;font-size:11px;opacity:.72">${safe(info?.displayName||`${lat.toFixed(6)}, ${lng.toFixed(6)}`)}</div><div style="margin-top:4px;font-size:10px;opacity:.6">${lat.toFixed(6)}, ${lng.toFixed(6)}</div></div>`;
+}
+
 function createDraggableDestination(lat,lng,name="Selected destination"){
   lat=Number(lat); lng=Number(lng);
   if(!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
@@ -3151,6 +3172,15 @@ function finishDistancePointDrag(e){
   unlockMapAfterDestinationDrag();
   distanceTool.drag=null;
   updateDistanceGeometry();
+
+  const p=drag.marker.getLatLng();
+  reverseGeocodeDetails(p.lat,p.lng).then(info=>{
+    if(!distanceTool.points[drag.index]) return;
+    const current=distanceTool.points[drag.index];
+    if(Math.abs(current.lat-p.lat)>1e-8 || Math.abs(current.lng-p.lng)>1e-8) return;
+    drag.marker.setPopupContent(distanceMarkerPopupHtml(info,p.lat,p.lng,drag.index));
+    distanceReadout(`📍 Point ${drag.index+1}: ${info?.name||info?.area||"Selected location"} · ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`);
+  });
 }
 
 function beginDistancePointDrag(marker,index,icon,e){
@@ -3207,6 +3237,12 @@ function addDistancePoint(latlng){
     zIndexOffset:1200,
     title:"Drag to move measurement point"
   }).addTo(map);
+
+  marker.bindPopup(distanceMarkerPopupHtml(null,point.lat,point.lng,index),{maxWidth:300,closeButton:true,autoPan:false});
+  reverseGeocodeDetails(point.lat,point.lng).then(info=>{
+    if(!distanceTool.points[index]) return;
+    marker.setPopupContent(distanceMarkerPopupHtml(info,point.lat,point.lng,index));
+  });
 
   distanceTool.pointLayers.push(marker);
 
