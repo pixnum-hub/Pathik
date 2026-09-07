@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pathik-v2026-09-07-05';
+const CACHE_NAME = 'pathik-v2026-09-07-07';
 const APP_SHELL = [
   './',
   './index.html',

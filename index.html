@@ -359,6 +359,38 @@ header{
   box-shadow:0 2px 8px #0007
 }
 
+.pathik-distance-place-tooltip{
+  background:#111827f2!important;
+  color:#fff!important;
+  border:1px solid #ffffff33!important;
+  border-radius:10px!important;
+  padding:0!important;
+  box-shadow:0 4px 16px #0009!important;
+  min-width:170px;
+  max-width:250px;
+  white-space:normal!important;
+  font-size:11px;
+  font-weight:700;
+}
+.pathik-distance-place-tooltip:before{
+  border-top-color:#111827f2!important;
+}
+.pathik-distance-place{
+  padding:7px 9px;
+  line-height:1.3;
+}
+.pathik-distance-place strong{
+  display:block;
+  font-size:12px;
+  margin-bottom:2px;
+}
+.pathik-distance-place small{
+  display:block;
+  opacity:.78;
+  font-size:9px;
+  margin-top:2px;
+}
+
 .pathik-distance-point-wrap{
   background:transparent!important;
   border:0!important;
@@ -2156,6 +2188,21 @@ function distanceMarkerPopupHtml(info,lat,lng,index){
   return `<div style="min-width:210px;line-height:1.45"><strong>📍 Point ${index+1}: ${safe(info?.name||"Measurement point")}</strong>${road?`<div>🛣️ ${safe(road)}</div>`:""}${info?.area?`<div>📌 ${safe(info.area)}</div>`:""}<div>ℹ️ ${safe(info?.type||"location")}</div><div style="margin-top:4px;font-size:11px;opacity:.72">${safe(info?.displayName||`${lat.toFixed(6)}, ${lng.toFixed(6)}`)}</div><div style="margin-top:4px;font-size:10px;opacity:.6">${lat.toFixed(6)}, ${lng.toFixed(6)}</div></div>`;
 }
 
+function distanceMarkerTooltipHtml(info,lat,lng,index){
+  const safe=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+  const name=info?.name||"Locating place…";
+  const road=info?.address?.road||info?.address?.pedestrian||info?.address?.footway||"";
+  const area=info?.area||"Location details unavailable";
+  return `<div class="pathik-distance-place"><strong>📍 P${index+1} · ${safe(name)}</strong>${road?`<div>🛣️ ${safe(road)}</div>`:""}<div>📌 ${safe(area)}</div><small>${lat.toFixed(6)}, ${lng.toFixed(6)} · ${safe(info?.type||"location")}</small></div>`;
+}
+
+function updateDistanceMarkerLocation(marker,info,lat,lng,index){
+  if(!marker) return;
+  marker.setTooltipContent(distanceMarkerTooltipHtml(info,lat,lng,index));
+  marker.setPopupContent(distanceMarkerPopupHtml(info,lat,lng,index));
+}
+
+
 function createDraggableDestination(lat,lng,name="Selected destination"){
   lat=Number(lat); lng=Number(lng);
   if(!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
@@ -3178,7 +3225,7 @@ function finishDistancePointDrag(e){
     if(!distanceTool.points[drag.index]) return;
     const current=distanceTool.points[drag.index];
     if(Math.abs(current.lat-p.lat)>1e-8 || Math.abs(current.lng-p.lng)>1e-8) return;
-    drag.marker.setPopupContent(distanceMarkerPopupHtml(info,p.lat,p.lng,drag.index));
+    updateDistanceMarkerLocation(drag.marker,info,p.lat,p.lng,drag.index);
     distanceReadout(`📍 Point ${drag.index+1}: ${info?.name||info?.area||"Selected location"} · ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`);
   });
 }
@@ -3238,10 +3285,19 @@ function addDistancePoint(latlng){
     title:"Drag to move measurement point"
   }).addTo(map);
 
+  marker.bindTooltip(distanceMarkerTooltipHtml(null,point.lat,point.lng,index),{
+    permanent:true,
+    direction:"top",
+    offset:[0,-12],
+    opacity:1,
+    className:"pathik-distance-place-tooltip",
+    interactive:false
+  });
   marker.bindPopup(distanceMarkerPopupHtml(null,point.lat,point.lng,index),{maxWidth:300,closeButton:true,autoPan:false});
   reverseGeocodeDetails(point.lat,point.lng).then(info=>{
     if(!distanceTool.points[index]) return;
-    marker.setPopupContent(distanceMarkerPopupHtml(info,point.lat,point.lng,index));
+    const current=distanceTool.points[index];
+    updateDistanceMarkerLocation(marker,info,current.lat,current.lng,index);
   });
 
   distanceTool.pointLayers.push(marker);
