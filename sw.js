@@ -1,4 +1,4 @@
-const VERSION = "pathik-v2026-09-07-03";
+const VERSION = "pathik-v2026-09-07-04";
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILE_CACHE = `${VERSION}-tiles`;

@@ -250,6 +250,14 @@ header{
   -webkit-user-drag:none!important
 }
 
+.leaflet-marker-pane,.leaflet-marker-icon,.pathik-destination-pin-wrap,.pathik-destination-pin{
+  -webkit-touch-callout:none!important;
+  touch-action:none!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-user-drag:none!important
+}
+
 .pathik-destination-pin-wrap{
   background:transparent!important;
   border:0!important;
@@ -302,62 +310,47 @@ header{
 }
 
 /* =========================================================
-   MEASUREMENT
+   DISTANCE TOOL — NEW IMPLEMENTATION
 ========================================================= */
 
-#measureStatus{
+#distanceReadout{
   position:absolute;
   left:50%;
-  bottom:63px;
-  transform:translateX(-50%) translateY(10px);
+  bottom:66px;
+  transform:translateX(-50%) translateY(8px);
   z-index:1250;
-
-  max-width:calc(100% - 30px);
-
+  max-width:calc(100% - 28px);
   padding:9px 14px;
-
   border-radius:999px;
-
-  background:#172033ee;
+  background:#111827ee;
   color:#fff;
-
-  border:1px solid #ffffff20;
-
-  box-shadow:0 4px 18px #0008;
-
+  border:1px solid #ffffff22;
+  box-shadow:0 4px 16px #0008;
   font-size:12px;
   font-weight:800;
-
   text-align:center;
-
   opacity:0;
   pointer-events:none;
-
-  transition:.2s;
-
+  transition:opacity .18s ease,transform .18s ease;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis
 }
 
-#measureStatus.show{
+#distanceReadout.show{
   opacity:1;
   transform:translateX(-50%) translateY(0)
 }
 
-.measure-active{
-  cursor:crosshair!important
-}
-
-.pathik-measure-label{
+.pathik-distance-label{
   background:transparent!important;
   border:0!important
 }
 
-.pathik-measure-label span{
+.pathik-distance-label span{
   display:block;
   padding:4px 7px;
-  border-radius:8px;
+  border-radius:7px;
   background:#2563eb;
   color:#fff;
   font-size:10px;
@@ -366,6 +359,44 @@ header{
   box-shadow:0 2px 8px #0007
 }
 
+.pathik-distance-point-wrap{
+  background:transparent!important;
+  border:0!important;
+  pointer-events:auto!important;
+  touch-action:none!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-user-drag:none!important
+}
+
+.pathik-distance-point{
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  background:#2563eb;
+  border:3px solid #fff;
+  box-shadow:0 2px 8px #0009;
+  pointer-events:auto;
+  touch-action:none;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-user-drag:none
+}
+
+.pathik-distance-point.dragging{
+  transform:scale(1.18);
+  cursor:grabbing;
+  box-shadow:0 4px 12px #000a
+}
+
+.pathik-distance-mode{
+  cursor:crosshair!important
+}
+
+/* =========================================================
+   MAP VARIATIONS
+========================================================= */
 /* =========================================================
    MAP VARIATIONS
 ========================================================= */
@@ -964,7 +995,7 @@ body.hc button{
     title="North up"
   >🧭</button>
 
-  <div id="measureStatus"></div>
+  <div id="distanceReadout" aria-live="polite"></div>
 
   <div class="map-controls">
 
@@ -2130,43 +2161,96 @@ function createDraggableDestination(lat,lng,name="Selected destination"){
   const icon=destinationMarker.getElement();
   if(!icon) return destinationMarker;
 
+  /*
+     IMPORTANT:
+     Leaflet Rotate has its own pointer/touch handlers on the map.
+     A marker drag must win that gesture from the very first event.
+     We therefore listen in CAPTURE phase and continue the drag on
+     window so neither desktop mouse nor mobile touch can hand the
+     gesture back to the map.
+  */
   L.DomEvent.disableClickPropagation(icon);
   L.DomEvent.disableScrollPropagation(icon);
   icon.style.touchAction="none";
+  icon.style.pointerEvents="auto";
   icon.style.userSelect="none";
   icon.style.webkitUserSelect="none";
   icon.style.webkitUserDrag="none";
   icon.style.cursor="grab";
 
+  const pin=icon.querySelector(".pathik-destination-pin");
+  if(pin){
+    pin.style.touchAction="none";
+    pin.style.pointerEvents="auto";
+    pin.style.userSelect="none";
+    pin.style.webkitUserSelect="none";
+    pin.style.webkitUserDrag="none";
+  }
+
   let dragging=false;
   let pointerId=null;
+  let lastEvent=null;
+
+  function hardStop(e){
+    if(!e) return;
+    e.preventDefault?.();
+    e.stopPropagation?.();
+    e.stopImmediatePropagation?.();
+  }
 
   function updateFromPointer(e){
     if(!dragging) return;
+    if(pointerId!==null && e.pointerId!==undefined && e.pointerId!==pointerId) return;
+
     const rect=map.getContainer().getBoundingClientRect();
-    const point=L.point(e.clientX-rect.left,e.clientY-rect.top);
+    const point=L.point(
+      e.clientX-rect.left,
+      e.clientY-rect.top
+    );
     const p=map.containerPointToLatLng(point);
+
     destinationMarker.setLatLng(p,{animate:false});
-    currentDestination={lat:p.lat,lng:p.lng,name:currentDestination?.name||"Selected destination"};
+    currentDestination={
+      lat:p.lat,
+      lng:p.lng,
+      name:currentDestination?.name||"Selected destination"
+    };
     $("to").value=`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
-    e.preventDefault();
-    e.stopPropagation();
+
+    lastEvent=e;
+    hardStop(e);
   }
 
   function finishDrag(e){
     if(!dragging) return;
+    if(pointerId!==null && e?.pointerId!==undefined && e.pointerId!==pointerId) return;
+
+    hardStop(e);
     dragging=false;
+
     if(pointerId!==null && icon.releasePointerCapture){
       try{icon.releasePointerCapture(pointerId);}catch(err){}
     }
+
+    window.removeEventListener("pointermove",updateFromPointer,true);
+    window.removeEventListener("pointerup",finishDrag,true);
+    window.removeEventListener("pointercancel",finishDrag,true);
+    window.removeEventListener("blur",finishDrag,true);
+
     pointerId=null;
+    lastEvent=null;
     icon.style.cursor="grab";
     map.getContainer().classList.remove("destination-dragging");
     unlockMapAfterDestinationDrag();
 
     const p=destinationMarker.getLatLng();
-    currentDestination={lat:p.lat,lng:p.lng,name:currentDestination?.name||"Selected destination"};
+    currentDestination={
+      lat:p.lat,
+      lng:p.lng,
+      name:currentDestination?.name||"Selected destination"
+    };
     $("to").value=`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+
     toast(`Destination moved to ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`);
 
     reverseGeocode(p.lat,p.lng).then(placeName=>{
@@ -2177,43 +2261,52 @@ function createDraggableDestination(lat,lng,name="Selected destination"){
     });
 
     if(currentPosition && $("from").value.trim()===""){
-      $("from").value=`${currentPosition.coords.latitude.toFixed(6)}, ${currentPosition.coords.longitude.toFixed(6)}`;
+      $("from").value=
+        `${currentPosition.coords.latitude.toFixed(6)}, `+
+        `${currentPosition.coords.longitude.toFixed(6)}`;
     }
     if($("from").value.trim()) getRoute();
-
-    e.preventDefault();
-    e.stopPropagation();
   }
 
-  icon.addEventListener("pointerdown",function(e){
-    if(e.button!==undefined && e.button!==0) return;
+  function beginDrag(e){
+    if(e.pointerType==="mouse" && e.button!==0) return;
+    if(dragging) return;
+
+    /* Capture-phase cancellation happens before Leaflet Rotate/map drag. */
+    hardStop(e);
+
     dragging=true;
     pointerId=e.pointerId;
+    lastEvent=e;
+
     lockMapForDestinationDrag();
     followGPS=false;
     if($("followSetting")) $("followSetting").checked=false;
     map.getContainer().classList.add("destination-dragging");
     icon.style.cursor="grabbing";
+
     if(icon.setPointerCapture){
       try{icon.setPointerCapture(e.pointerId);}catch(err){}
     }
-    e.preventDefault();
-    e.stopPropagation();
-  },{passive:false});
 
-  icon.addEventListener("pointermove",updateFromPointer,{passive:false});
-  icon.addEventListener("pointerup",finishDrag,{passive:false});
-  icon.addEventListener("pointercancel",finishDrag,{passive:false});
+    window.addEventListener("pointermove",updateFromPointer,true);
+    window.addEventListener("pointerup",finishDrag,true);
+    window.addEventListener("pointercancel",finishDrag,true);
+    window.addEventListener("blur",finishDrag,true);
 
+    /* Put the marker exactly under the initial mouse/finger point. */
+    updateFromPointer(e);
+  }
+
+  /* Capture phase is deliberate: Leaflet map/rotate handlers must not win. */
+  icon.addEventListener("pointerdown",beginDrag,{passive:false,capture:true});
+
+  /* Suppress legacy mouse/touch bubbling without creating a second drag. */
   ["mousedown","mouseup","click","dblclick","touchstart","touchmove","touchend"]
-    .forEach(type=>icon.addEventListener(type,e=>{
-      e.preventDefault();
-      e.stopPropagation();
-    },{passive:false}));
+    .forEach(type=>icon.addEventListener(type,hardStop,{passive:false,capture:true}));
 
   return destinationMarker;
 }
-
 /* =========================================================
    MAP SEARCH
 ========================================================= */
@@ -2912,260 +3005,262 @@ $("swapBtn").onclick=()=>{
 };
 
 /* =========================================================
-   DISTANCE MEASUREMENT
+   DISTANCE TOOL — DRAGGABLE POINT IMPLEMENTATION
 ========================================================= */
 
-let measureMode=false;
-let measurePoints=[];
-let measureLine=null;
-let measureMarkers=[];
-let measureLabels=[];
-let measureTotal=0;
-
-function showMeasureStatus(text){
-
-  const box=
-    $("measureStatus");
-
-  box.textContent=text;
-
-  box.classList.add("show");
-}
-
-function hideMeasureStatus(){
-
-  $("measureStatus")
-    .classList.remove("show");
-}
-
-function startMeasurement(){
-
-  measureMode=true;
-
-  $("measureBtn")
-    .classList.add("active");
-
-  map.getContainer()
-    .classList.add(
-      "measure-active"
-    );
-
-  showMeasureStatus(
-    "📏 Tap points on the map to measure distance"
-  );
-}
-
-function stopMeasurement(){
-
-  measureMode=false;
-
-  $("measureBtn")
-    .classList.remove("active");
-
-  map.getContainer()
-    .classList.remove(
-      "measure-active"
-    );
-
-  hideMeasureStatus();
-}
-
-function clearMeasure(){
-
-  stopMeasurement();
-
-  measurePoints=[];
-
-  measureTotal=0;
-
-  if(measureLine){
-
-    map.removeLayer(
-      measureLine
-    );
-
-    measureLine=null;
-  }
-
-  measureMarkers.forEach(
-    marker=>{
-
-      if(map.hasLayer(marker)){
-        map.removeLayer(marker);
-      }
-
-    }
-  );
-
-  measureLabels.forEach(
-    label=>{
-
-      if(map.hasLayer(label)){
-        map.removeLayer(label);
-      }
-
-    }
-  );
-
-  measureMarkers=[];
-  measureLabels=[];
-}
-
-function addMeasurePoint(latlng){
-
-  measurePoints.push(latlng);
-
-  const marker=
-    L.circleMarker(
-      latlng,
-      {
-        radius:7,
-        weight:3,
-        color:"#2563eb",
-        fillColor:"#fff",
-        fillOpacity:1,
-        interactive:false
-      }
-    ).addTo(map);
-
-  measureMarkers.push(marker);
-
-  if(!measureLine){
-
-    measureLine=
-      L.polyline(
-        measurePoints,
-        {
-          color:"#2563eb",
-          weight:5,
-          opacity:.95,
-          dashArray:"10 7",
-          lineCap:"round",
-          lineJoin:"round",
-          interactive:false
-        }
-      ).addTo(map);
-
-  }else{
-
-    measureLine.setLatLngs(
-      measurePoints
-    );
-  }
-
-  measureTotal=0;
-
-  for(
-    let i=1;
-    i<measurePoints.length;
-    i++
-  ){
-
-    measureTotal +=
-      map.distance(
-        measurePoints[i-1],
-        measurePoints[i]
-      );
-  }
-
-  if(measurePoints.length>=2){
-
-    const a=
-      measurePoints[
-        measurePoints.length-2
-      ];
-
-    const b=
-      measurePoints[
-        measurePoints.length-1
-      ];
-
-    const segment=
-      map.distance(a,b);
-
-    const midpoint=
-      L.latLng(
-        (a.lat+b.lat)/2,
-        (a.lng+b.lng)/2
-      );
-
-    const label=
-      L.marker(
-        midpoint,
-        {
-          interactive:false,
-          icon:L.divIcon({
-            className:
-              "pathik-measure-label",
-            html:
-              `<span>`+
-              `${formatDistance(segment)}`+
-              `</span>`
-          })
-        }
-      ).addTo(map);
-
-    measureLabels.push(label);
-  }
-
-  if(measurePoints.length===1){
-
-    showMeasureStatus(
-      "📍 First point placed — tap another point"
-    );
-
-  }else{
-
-    showMeasureStatus(
-      `📏 Total distance: `+
-      `${formatDistance(measureTotal)}`+
-      ` · ${measurePoints.length} points`
-    );
-  }
-}
-
-$("measureBtn").onclick=()=>{
-
-  if(measureMode){
-
-    stopMeasurement();
-
-  }else{
-
-    startMeasurement();
-  }
-
+const distanceTool={
+  active:false,
+  points:[],
+  line:null,
+  pointLayers:[],
+  labelLayers:[],
+  total:0,
+  drag:null
 };
 
-map.on("click",e=>{
+function distanceText(m){
+  if(!Number.isFinite(m)) return "0 m";
+  if(m<1000) return `${Math.round(m)} m`;
+  return `${(m/1000).toFixed(2)} km`;
+}
 
-  /*
-    IMPORTANT:
-    When measuring, normal map click behavior
-    is bypassed so the measurement point is
-    captured instead.
-  */
+function distanceReadout(text){
+  const el=$("distanceReadout");
+  if(!el) return;
+  el.textContent=text;
+  el.classList.add("show");
+}
 
-  if(measureMode){
+function hideDistanceReadout(){
+  const el=$("distanceReadout");
+  if(el) el.classList.remove("show");
+}
 
-    addMeasurePoint(
-      e.latlng
-    );
+function removeDistanceLayers(){
+  if(distanceTool.line && map.hasLayer(distanceTool.line)) map.removeLayer(distanceTool.line);
+  distanceTool.pointLayers.forEach(layer=>{
+    if(map.hasLayer(layer)) map.removeLayer(layer);
+  });
+  distanceTool.labelLayers.forEach(layer=>{
+    if(map.hasLayer(layer)) map.removeLayer(layer);
+  });
+  distanceTool.line=null;
+  distanceTool.pointLayers=[];
+  distanceTool.labelLayers=[];
+}
 
+function resetDistanceTool(){
+  if(distanceTool.drag) finishDistancePointDrag();
+  distanceTool.points=[];
+  distanceTool.total=0;
+  removeDistanceLayers();
+}
+
+function stopDistanceTool(){
+  if(distanceTool.drag) finishDistancePointDrag();
+  distanceTool.active=false;
+  $("measureBtn")?.classList.remove("active");
+  map.getContainer().classList.remove("pathik-distance-mode");
+  hideDistanceReadout();
+}
+
+function startDistanceTool(){
+  resetDistanceTool();
+  distanceTool.active=true;
+  $("measureBtn")?.classList.add("active");
+  map.getContainer().classList.add("pathik-distance-mode");
+  distanceReadout("📏 Tap the map to place the first point");
+}
+
+function toggleDistanceTool(){
+  if(distanceTool.active) stopDistanceTool();
+  else startDistanceTool();
+}
+
+function distancePointIcon(dragging=false){
+  return L.divIcon({
+    className:"pathik-distance-point-wrap",
+    html:`<div class="pathik-distance-point${dragging?" dragging":""}"></div>`,
+    iconSize:[20,20],
+    iconAnchor:[10,10]
+  });
+}
+
+function distanceHardStop(e){
+  if(!e) return;
+  e.preventDefault?.();
+  e.stopPropagation?.();
+  e.stopImmediatePropagation?.();
+}
+
+function updateDistanceGeometry(){
+  distanceTool.total=0;
+
+  for(let i=1;i<distanceTool.points.length;i++){
+    distanceTool.total+=map.distance(distanceTool.points[i-1],distanceTool.points[i]);
+  }
+
+  if(distanceTool.line) distanceTool.line.setLatLngs(distanceTool.points);
+
+  distanceTool.labelLayers.forEach(layer=>{
+    if(map.hasLayer(layer)) map.removeLayer(layer);
+  });
+  distanceTool.labelLayers=[];
+
+  for(let i=1;i<distanceTool.points.length;i++){
+    const a=distanceTool.points[i-1];
+    const b=distanceTool.points[i];
+    const segment=map.distance(a,b);
+    const midpoint=L.latLng((a.lat+b.lat)/2,(a.lng+b.lng)/2);
+    const label=L.marker(midpoint,{
+      interactive:false,
+      icon:L.divIcon({
+        className:"pathik-distance-label",
+        html:`<span>${distanceText(segment)}</span>`,
+        iconSize:null
+      })
+    }).addTo(map);
+    distanceTool.labelLayers.push(label);
+  }
+
+  if(distanceTool.points.length===1){
+    distanceReadout("📍 1 point · Drag it to reposition");
+  }else if(distanceTool.points.length>1){
+    distanceReadout(`📏 Total: ${distanceText(distanceTool.total)} · ${distanceTool.points.length} points · Drag any point`);
+  }
+}
+
+function finishDistancePointDrag(e){
+  const drag=distanceTool.drag;
+  if(!drag) return;
+  if(e && drag.pointerId!==null && e.pointerId!==undefined && e.pointerId!==drag.pointerId) return;
+  distanceHardStop(e);
+
+  window.removeEventListener("pointermove",drag.move,true);
+  window.removeEventListener("pointerup",drag.up,true);
+  window.removeEventListener("pointercancel",drag.up,true);
+  window.removeEventListener("blur",drag.up,true);
+
+  if(drag.icon.releasePointerCapture && drag.pointerId!==null){
+    try{drag.icon.releasePointerCapture(drag.pointerId);}catch(err){}
+  }
+
+  drag.icon.style.cursor="grab";
+  const finishedPoint=drag.icon.querySelector(".pathik-distance-point");
+  if(finishedPoint) finishedPoint.classList.remove("dragging");
+  unlockMapAfterDestinationDrag();
+  distanceTool.drag=null;
+  updateDistanceGeometry();
+}
+
+function beginDistancePointDrag(marker,index,icon,e){
+  if(e.pointerType==="mouse" && e.button!==0) return;
+  if(distanceTool.drag) return;
+
+  distanceHardStop(e);
+  lockMapForDestinationDrag();
+
+  const drag={marker,index,icon,pointerId:e.pointerId,move:null,up:null};
+  distanceTool.drag=drag;
+  icon.style.cursor="grabbing";
+  const activePoint=icon.querySelector(".pathik-distance-point");
+  if(activePoint) activePoint.classList.add("dragging");
+
+  if(icon.setPointerCapture){
+    try{icon.setPointerCapture(e.pointerId);}catch(err){}
+  }
+
+  drag.move=function(ev){
+    if(!distanceTool.drag || ev.pointerId!==drag.pointerId) return;
+    distanceHardStop(ev);
+
+    const rect=map.getContainer().getBoundingClientRect();
+    const point=L.point(ev.clientX-rect.left,ev.clientY-rect.top);
+    const latlng=map.containerPointToLatLng(point);
+    distanceTool.points[index]=L.latLng(latlng.lat,latlng.lng);
+    marker.setLatLng(distanceTool.points[index],{animate:false});
+    updateDistanceGeometry();
+  };
+
+  drag.up=function(ev){ finishDistancePointDrag(ev); };
+
+  window.addEventListener("pointermove",drag.move,{passive:false,capture:true});
+  window.addEventListener("pointerup",drag.up,{passive:false,capture:true});
+  window.addEventListener("pointercancel",drag.up,{passive:false,capture:true});
+  window.addEventListener("blur",drag.up,{capture:true});
+
+  drag.move(e);
+}
+
+function addDistancePoint(latlng){
+  if(!distanceTool.active) return;
+
+  const point=L.latLng(latlng.lat,latlng.lng);
+  const index=distanceTool.points.length;
+  distanceTool.points.push(point);
+
+  const marker=L.marker(point,{
+    draggable:false,
+    autoPan:false,
+    interactive:true,
+    icon:distancePointIcon(false),
+    zIndexOffset:1200,
+    title:"Drag to move measurement point"
+  }).addTo(map);
+
+  distanceTool.pointLayers.push(marker);
+
+  const icon=marker.getElement();
+  if(icon){
+    icon.style.touchAction="none";
+    icon.style.pointerEvents="auto";
+    icon.style.userSelect="none";
+    icon.style.webkitUserSelect="none";
+    icon.style.webkitUserDrag="none";
+    icon.style.cursor="grab";
+    L.DomEvent.disableClickPropagation(icon);
+    L.DomEvent.disableScrollPropagation(icon);
+
+    icon.addEventListener("pointerdown",e=>{
+      beginDistancePointDrag(marker,index,icon,e);
+    },{passive:false,capture:true});
+
+    ["mousedown","mouseup","click","dblclick","touchstart","touchmove","touchend"]
+      .forEach(type=>icon.addEventListener(type,distanceHardStop,{passive:false,capture:true}));
+  }
+
+  if(distanceTool.points.length===1){
+    distanceReadout("📍 1 point · Drag it to reposition · Tap map for another point");
     return;
   }
 
+  if(!distanceTool.line){
+    distanceTool.line=L.polyline(distanceTool.points,{
+      color:"#2563eb",weight:5,opacity:.95,lineCap:"round",lineJoin:"round",dashArray:"9 7",interactive:false
+    }).addTo(map);
+  }
+
+  updateDistanceGeometry();
+}
+
+$("measureBtn").onclick=toggleDistanceTool;
+
+map.on("click",e=>{
+  if(!distanceTool.active || distanceTool.drag) return;
+  addDistancePoint(e.latlng);
 });
 
 /* =========================================================
    CLEAR MAP
 ========================================================= */
 
+
 $("clearBtn").onclick=()=>{
 
   clearRoutes();
 
-  clearMeasure();
+  stopDistanceTool();
+  resetDistanceTool();
 
   if(destinationMarker){
 
